@@ -62,6 +62,21 @@ jobs:
           --hidden-import win32gui --hidden-import win32com.shell.shell
           --add-data "%CD%\assets;assets" "%CD%\main.py"
 
+      - name: Smoke test the built app (PDF engine in worker mode)
+        shell: pwsh
+        run: |
+          $work = Join-Path $env:RUNNER_TEMP 'smoke'
+          New-Item -ItemType Directory -Force -Path "$work\out" | Out-Null
+          python -c "import pymupdf,sys; d=pymupdf.open(); [d.new_page() for _ in range(3)]; d.save(sys.argv[1])" "$work\sample.pdf"
+          $req = @{ action = 'pdf_png_zip'; paths = @("$work\sample.pdf"); out_dir = "$work\out"; options = @{} } | ConvertTo-Json -Compress
+          Set-Content -Path "$work\req.json" -Value $req -Encoding utf8
+          $p = Start-Process -FilePath build_out\dist\Morphix\Morphix.exe -ArgumentList '--morphix-worker', "$work\req.json" -PassThru -Wait
+          Get-ChildItem "$work\out" | Format-Table Name, Length
+          $log = Join-Path $env:LOCALAPPDATA 'Morphix\logs\morphix.log'
+          if (Test-Path $log) { Get-Content $log -Tail 40 }
+          if (-not (Get-ChildItem "$work\out")) { throw "The built app could not convert a PDF (exit $($p.ExitCode))" }
+          Write-Host "Smoke test OK"
+
       - name: Package
         shell: pwsh
         run: |
