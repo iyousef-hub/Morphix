@@ -78,7 +78,7 @@ if exist "%WORK%\dist" rmdir /s /q "%WORK%\dist"
   --hidden-import worker_process --hidden-import engine_core --hidden-import transcription_engine ^
   --hidden-import hub_panel --hidden-import i18n_ar --hidden-import ui_kit --hidden-import win_compat ^
   --hidden-import docs_engine --hidden-import background_engine --hidden-import background_dialog ^
-  --hidden-import windows_hotkeys --hidden-import theme ^
+  --hidden-import windows_hotkeys --hidden-import theme --hidden-import ms_office ^
   --hidden-import win32gui --hidden-import win32com.shell.shell ^
   --add-data "%ROOT%\assets;assets" "%ROOT%\main.py" >> "%LOG%" 2>&1 || goto :error
 if not exist "%WORK%\dist\Morphix\Morphix.exe" goto :error

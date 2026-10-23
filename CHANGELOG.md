@@ -1,3 +1,14 @@
+## v1.7.1 — Bug fixes
+
+- **Windows · Office → PDF failed silently** (`Office conversion failed for <file>:` with an empty reason):
+  LibreOffice was forced into the macOS/Linux-only "svp" display mode. No longer forced on Windows; Morphix waits
+  through `soffice.com`; failures always include a reason.
+- **Windows · slow presentation conversion** (≈ 1.5 min): uses Microsoft Office (PowerPoint / Word / Excel) for the
+  PDF export when installed — invisible, never closes the user's open PowerPoint, falls back to LibreOffice.
+  The LibreOffice profile is reused between conversions (locked; a parallel conversion uses a temporary one).
+- **Studio sidebar**: the "Running in the background" card no longer overlaps or clips its text.
+- **Mac build**: built outside iCloud with metadata cleared, so ad-hoc signing no longer fails.
+
 ## v1.7.0 — Background removal, documents & Excel tools
 
 - **Add-ons** page (Studio, Settings and the M menu): every downloadable component with its size, a short
