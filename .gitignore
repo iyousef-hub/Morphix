@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+__MACOSX/
+.DS_Store
+build/
+dist/
+*.zip
+*.dmg
+*.msix
+build_log.txt
+.venv*/
+runtime/

@@ -1,0 +1,4 @@
+# Offline Speech -> Text (Arabic / English). Installed separately so that a
+# platform without these wheels still gets every other Morphix tool.
+faster-whisper>=1.1,<2
+numpy>=1.24

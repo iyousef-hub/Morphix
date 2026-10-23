@@ -1,0 +1,15 @@
+Morphix v0.9 Patch
+-----------------
+1. Quit the old Morphix completely: press Control+C in Terminal, or click Quit Morphix in the blue M menu.
+2. Open the folder where main.py and your existing .venv live (Morphix 8 or Morphix 9).
+3. Copy ALL files and the assets directory contents from this patch into that folder; replace files when asked.
+4. Keep the old .venv. Nothing needs reinstalling if v0.8.3 ran successfully.
+5. In Terminal inside that folder:
+   source .venv/bin/activate
+   python main.py
+6. Click Test Quick Wheel with files... and select a PNG.
+7. Click the 'Make PDF' sector. Watch Terminal for [Morphix] Wheel selected: images_pdf.
+8. The first output is saved next to the source PNG if all inputs share that folder.
+
+If input permissions are missing, use macOS System Settings > Privacy & Security > Input Monitoring and Automation for the launching Terminal/Python process. Restart Morphix after permission changes.
+Read RELEASE_v0.9.md for limitations and additional tests.
