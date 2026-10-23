@@ -45,7 +45,7 @@ echo '▸ Building Morphix.app (this takes a few minutes)…'
   --collect-submodules huggingface_hub --collect-submodules tokenizers \
   --collect-submodules AppKit --collect-submodules Foundation --collect-submodules objc \
   --hidden-import worker_process --hidden-import engine_core --hidden-import transcription_engine \
-  --hidden-import hub_panel --hidden-import i18n_ar --hidden-import ui_kit \
+  --hidden-import hub_panel --hidden-import i18n_ar --hidden-import ui_kit --hidden-import theme \
   --hidden-import docs_engine --hidden-import background_engine --hidden-import background_dialog \
   --collect-submodules openpyxl \
   --add-data "$ROOT/assets:assets" "${ICON_ARGS[@]}" "$ROOT/main.py"
