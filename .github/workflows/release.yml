@@ -1,0 +1,40 @@
+name: Release
+
+# Actions → Release → Run workflow: builds Windows and macOS, then publishes
+# a GitHub Release (v<VERSION>) with both downloads attached.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    uses: ./.github/workflows/build-windows.yml
+  macos:
+    uses: ./.github/workflows/build-macos.yml
+
+  publish:
+    needs: [windows, macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Version
+        run: echo "VERSION=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_ENV"
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-windows
+          path: out
+      - uses: actions/download-artifact@v4
+        with:
+          name: Morphix_macOS
+          path: out
+      - run: ls -la out
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION }}
+          target_commitish: ${{ github.sha }}
+          name: Morphix ${{ env.VERSION }}
+          body_path: .github/release-notes.md
+          files: out/*
