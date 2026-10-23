@@ -45,7 +45,7 @@ from app_assets import logo_png
 from i18n import tr
 import i18n
 
-APP_VERSION = '1.7.0'
+APP_VERSION = '1.7.1'
 
 PDF = {'.pdf'}
 IMAGE = {'.jpg', '.jpeg', '.png', '.webp', '.bmp', '.tif', '.tiff'}
