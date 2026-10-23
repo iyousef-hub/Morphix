@@ -1,0 +1,23 @@
+name: Update release notes
+
+# Editing .github/release-notes.md updates the text of the current release (v<VERSION>).
+on:
+  push:
+    branches: [main]
+    paths: ['.github/release-notes.md']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  notes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "VERSION=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_ENV"
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION }}
+          name: Morphix ${{ env.VERSION }}
+          body_path: .github/release-notes.md

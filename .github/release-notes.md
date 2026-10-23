@@ -1,16 +1,16 @@
 ## Morphix 1.7.0
 
-أدواتك لكل ملفاتك — PDF، الصور، Office، الصوت والفيديو، OCR، وتحويل الكلام إلى نص بدون إنترنت.
+Every file tool you need — one shortcut away. PDF, images, Office, audio & video, OCR and offline speech-to-text.
 
-### التحميل
-- **Windows:** `Morphix_Windows_1.7.0.zip` — فك الضغط وشغّل `Morphix.exe` (لا تفصله عن مجلد `_internal`).
-- **macOS (Apple Silicon):** `Morphix_macOS_1.7.0.dmg` — افتحه واسحب Morphix إلى Applications، ثم أول مرة: زر يمين ← Open.
+### Download
+- **Windows:** `Morphix_Windows_1.7.0.zip` — unzip it and run `Morphix.exe` (keep it together with the `_internal` folder).
+- **macOS (Apple Silicon):** `Morphix_macOS_1.7.0.dmg` — open it and drag Morphix into Applications. The first time, right-click Morphix → **Open**.
 
-### الجديد
-- اختصار لوحة المفاتيح على Windows أصبح أثبت ويعمل بأي لغة لوحة مفاتيح
-- قراءة الملفات المحددة في مستكشف الملفات (مع التبويبات) وسطح المكتب
-- الضغط على أيقونة Morphix يفتح الأستوديو ويُظهره في المقدمة
-- شريط الأدوات والقائمة يتبعان لغة الأستوديو
-- خط IBM Plex Sans Arabic وألوان داكنة موحّدة
+### What's new
+- More reliable keyboard shortcut on Windows that works with any keyboard language
+- Reads the files selected in File Explorer (including tabs) and on the desktop
+- Clicking the Morphix tray icon opens the Studio and brings it to the front
+- The Action Hub and tray menu follow the Studio language
+- New IBM Plex Sans Arabic font and a consistent dark theme
 
-> النسخ غير موقّعة رقميًا: قد يُظهر Windows تنبيه SmartScreen (المزيد ← تشغيل على أي حال)، وقد يمنعها «التحكم الذكي في التطبيقات» إن كان مفعّلًا.
+> These builds are not digitally signed. Windows may show a SmartScreen warning (**More info → Run anyway**), and Smart App Control may block the app if it is turned on.
