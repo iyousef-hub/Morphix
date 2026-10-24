@@ -1,0 +1,16 @@
+name: Move v1.7.1 tag (one-time)
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  retag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: |
+          git tag -f v1.7.1 514bb84
+          git push -f origin refs/tags/v1.7.1
+          git ls-remote origin refs/tags/v1.7.1
