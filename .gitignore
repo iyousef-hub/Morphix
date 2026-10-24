@@ -10,3 +10,5 @@ dist/
 build_log.txt
 .venv*/
 runtime/
+build_linux/
+*.AppImage

@@ -1,6 +1,6 @@
 name: Release
 
-# Actions → Release → Run workflow: builds Windows and macOS, then publishes
+# Actions → Release → Run workflow: builds Windows, macOS and Linux, then publishes
 # a GitHub Release (v<VERSION>) with both downloads attached.
 
 on:
@@ -14,9 +14,11 @@ jobs:
     uses: ./.github/workflows/build-windows.yml
   macos:
     uses: ./.github/workflows/build-macos.yml
+  linux:
+    uses: ./.github/workflows/build-linux.yml
 
   publish:
-    needs: [windows, macos]
+    needs: [windows, macos, linux]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,6 +31,10 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: Morphix_macOS
+          path: out
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-linux
           path: out
       - run: ls -la out
       - uses: softprops/action-gh-release@v2

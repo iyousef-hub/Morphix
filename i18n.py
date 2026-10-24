@@ -68,6 +68,35 @@ WINDOWS_WORDS = {
 }
 
 
+# Linux: whole sentences that work differently there first, then single words.
+LINUX_SENTENCES = {
+    'Select one or more files in Finder, then try again.': {
+        'en': 'Copy your files in the file manager (Ctrl + C), or right-click them → Morphix, then try again.',
+        'ar': 'انسخ ملفاتك في مدير الملفات (Ctrl + C)، أو انقر عليها بالزر الأيمن ← Morphix، ثم حاول مرة أخرى.'},
+    'Shortcut is ready. Select files in Finder and press it.': {
+        'en': 'Shortcut is ready. Copy files in your file manager (Ctrl + C) and press it — or right-click them → Morphix.',
+        'ar': 'الاختصار جاهز. انسخ ملفاتك في مدير الملفات (Ctrl + C) ثم اضغطه، أو انقر عليها بالزر الأيمن ← Morphix.'},
+}
+LINUX_WORDS = {
+    'en': (('Launch_Morphix_Mac.command', 'the Morphix AppImage'), ('Show in Finder', 'Show in folder'),
+           ('a Finder window', 'your file manager'), ('Finder', 'the file manager'),
+           ('the menu bar', 'the system tray'), ('menu bar', 'system tray'), ('⌘ Command', 'Super'),
+           ('⌘', 'Super'), ('Option + ', 'Alt + '), ('macOS', 'Linux'), ('This Mac', 'This computer'),
+           ('this Mac', 'this computer'), ('the Mac', 'the computer'), ('a Mac', 'a computer')),
+    'ar': (('Launch_Morphix_Mac.command', 'ملف Morphix ‏(AppImage)'), ('Finder', 'مدير الملفات'),
+           ('شريط القوائم', 'شريط النظام'), ('⌘ Command', 'Super'), ('⌘', 'Super'),
+           ('Option + ', 'Alt + '), ('macOS', 'Linux'), ('جهاز Mac', 'جهاز')),
+}
+
+
+def for_linux(text, lang='en', source=None):
+    if source in LINUX_SENTENCES:
+        return LINUX_SENTENCES[source].get(lang, LINUX_SENTENCES[source]['en'])
+    for mac, other in LINUX_WORDS.get(lang, ()):
+        text = text.replace(mac, other)
+    return text
+
+
 def for_windows(text, lang='en'):
     for mac, win in WINDOWS_WORDS.get(lang, ()):
         text = text.replace(mac, win)
@@ -83,6 +112,8 @@ def trl(lang, text, **fmt):
             out = text.format(**fmt)
     if sys.platform == 'win32':
         out = for_windows(out, lang)
+    elif sys.platform.startswith('linux') and not os.environ.get('MORPHIX_NO_PLATFORM_WORDS'):
+        out = for_linux(out, lang, text)
     return out
 
 

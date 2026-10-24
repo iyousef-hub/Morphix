@@ -1,3 +1,16 @@
+## v1.8.0 — Linux
+
+- **New: Linux version** as a single AppImage (Ubuntu 22.04+, Debian 12+, Fedora, Mint…), built and
+  smoke-tested on GitHub Actions next to the Mac and Windows builds.
+- Right-click integration: Files/Nautilus (Scripts → Morphix), Nemo and Dolphin open the Action Hub with the
+  selected files; Morphix also adds itself to the application menu and starts with the computer (XDG autostart).
+- Global shortcut on Linux: X11 key grab (physical key, works with any keyboard layout, Caps/Num Lock safe);
+  on Wayland a GNOME system shortcut runs `Morphix --hotkey`. With the shortcut, files copied with Ctrl + C in
+  the file manager are used as the selection.
+- New command line: `Morphix --hub FILE…` and `Morphix --hotkey` (forwarded to the running Morphix).
+- The Action Hub gets a shape mask on X11 desktops without a compositor (no black corners).
+- Interface words adapt on Linux (file manager, system tray, Super key) in Arabic and English.
+
 ## v1.7.2 — Dialog layout fix
 
 - **Squeezed dialogs**: with the tall IBM Plex Sans Arabic font, some windows opened too short — drop-downs were

@@ -16,6 +16,17 @@ Unzip into a new folder and run `Launch_Morphix_Mac.command` **once** (needs int
 runtime and a local **`Morphix.app`** — afterwards just double-click `Morphix.app`; no Terminal needed.
 Arabic quick start: `START_HERE_AR.md`. To build a larger standalone `.app` / `.dmg` on a **Mac developer system with LibreOffice installed**, run `Build_Morphix_Mac.command`. This is **not a prebuilt, signed or notarized DMG**.
 
+### Linux use
+
+Download `Morphix-<version>-x86_64.AppImage` from the Releases page, make it executable
+(right-click → Properties → *Allow executing file as program*, or `chmod +x`) and double-click it.
+On first start Morphix adds itself to the application menu and to the right-click menu of
+Files (Nautilus → *Scripts → Morphix*), Nemo and Dolphin (*Morphix*): select files, right-click,
+and the Action Hub opens with them. The global shortcut (Ctrl + Shift + M) works on X11 directly;
+on Wayland, GNOME gets a system shortcut automatically. Linux file managers have no shared
+"current selection", so with the shortcut copy the files first (Ctrl + C). To build the AppImage
+yourself: `./Build_Morphix_Linux.sh`.
+
 ### Windows use
 
 Use Python and `pip install -r requirements.txt`, then run `python main.py`. To build `dist/Morphix/Morphix.exe` and its complete runtime folder on a **Windows developer system with LibreOffice installed**, run `Build_Morphix_Windows.bat`. Do not distribute only the EXE; distribute the entire folder or make an installer after testing it.

@@ -254,6 +254,44 @@ def QBoxLayoutFor(vertical):
     return lay
 
 
+_NO_COMPOSITOR = None
+
+
+def needs_shape_mask():
+    """Linux X11 without a compositor draws transparent windows black.
+
+    Then the hub gets a window mask instead (crisp edges, no black corners).
+    With a compositor (GNOME, KDE, …) real transparency keeps the soft glow."""
+    global _NO_COMPOSITOR
+    if _NO_COMPOSITOR is None:
+        _NO_COMPOSITOR = False
+        try:
+            import sys
+            from PySide6.QtGui import QGuiApplication
+            if sys.platform.startswith('linux') and QGuiApplication.platformName() == 'xcb':
+                from Xlib import display as xdisplay
+                d = xdisplay.Display()
+                owner = d.get_selection_owner(d.intern_atom(f'_NET_WM_CM_S{d.get_default_screen()}'))
+                _NO_COMPOSITOR = not owner or getattr(owner, 'id', owner) == 0
+                d.close()
+        except Exception:
+            _NO_COMPOSITOR = False
+    return _NO_COMPOSITOR
+
+
+def apply_shape_mask(widget, kind='rounded', radius=16, inset=0):
+    if not needs_shape_mask():
+        return
+    from PySide6.QtGui import QRegion, QPainterPath
+    r = widget.rect().adjusted(inset, inset, -inset, -inset)
+    if kind == 'ellipse':
+        widget.setMask(QRegion(r, QRegion.Ellipse))
+    else:
+        path = QPainterPath()
+        path.addRoundedRect(r, radius, radius)
+        widget.setMask(QRegion(path.toFillPolygon().toPolygon()))
+
+
 class PanelWindow(QWidget):
     """Top-level window around PanelContent with the same API as WheelWindow."""
     action_requested = Signal(object)
@@ -308,6 +346,7 @@ class PanelWindow(QWidget):
         self.content.resize(need)
         self.setMinimumSize(need)
         self.resize(need)
+        apply_shape_mask(self, 'rounded', round(16 * getattr(self.content, 'scale', 1)))
 
     def set_context(self, paths, profile, actions):
         self.paths, self.profile = list(paths), profile

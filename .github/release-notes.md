@@ -1,54 +1,27 @@
-## Morphix 1.7.2 — Bug fixes
+## Morphix 1.8.0 — Now on Linux 🐧
 
 Every file tool you need — one shortcut away. PDF, images, Office, audio & video, OCR and offline speech-to-text.
 
 ### Download
-- **Windows:** `Morphix_Windows_1.7.2.zip` — unzip it and run `Morphix.exe` (keep it together with the `_internal` folder).
-- **macOS (Apple Silicon):** `Morphix_macOS_1.7.2.dmg` — open it and drag Morphix into Applications. The first time, right-click Morphix → **Open**.
+- **Windows:** `Morphix_Windows_1.8.0.zip` — unzip it and run `Morphix.exe` (keep it together with the `_internal` folder).
+- **macOS (Apple Silicon):** `Morphix_macOS_1.8.0.dmg` — open it and drag Morphix into Applications. The first time, right-click Morphix → **Open**.
+- **Linux (x86_64):** `Morphix-1.8.0-x86_64.AppImage` — make it executable (right-click → Properties → *Allow executing file as program*, or `chmod +x`) and double-click it.
 
-### Bug fixes
+### New: Linux version
+- One file (AppImage) that runs on most distributions — Ubuntu 22.04+, Debian 12+, Fedora, Linux Mint and more. No installation, no Python.
+- **Right-click → Morphix** in your file manager opens the Action Hub with the selected files:
+  Files/Nautilus (*Scripts → Morphix*), Nemo and Dolphin.
+- **Ctrl + Shift + M** works on X11 with any keyboard layout. On Wayland, Morphix adds the shortcut to GNOME's keyboard settings automatically.
+  Linux file managers don't share the current selection with other apps, so with the shortcut copy your files first (Ctrl + C).
+- Adds itself to the application menu and starts with the computer (can be turned off in Settings).
+- Every tool works on Linux: PDF, OCR, images, Office → PDF (with LibreOffice), Excel tools, audio & video, speech-to-text, background removal.
 
-**Squeezed windows and cut-off text** *(new in 1.7.2)*
-- *The error:* some windows opened too short — the drop-down menus were squashed so their text was unreadable, and
-  the last lines of longer texts were cut off (Speech → Text, Remove background, About, Compression).
-- *The cause:* the new IBM Plex Sans Arabic font is taller than the old one, and Qt sized each window before
-  measuring how tall its wrapped text becomes.
-- *The fix:* every window now measures its real content height when it opens and grows to fit (never beyond the screen).
+### Fixes
+- The Action Hub no longer shows black corners on Linux desktops without visual effects (compositor).
 
-### Fixed in 1.7.1
-
-**1. Office → PDF failed on Windows with an empty error**
-- *The error:* converting a PowerPoint/Word/Excel file showed
-  `Office conversion failed for Embedded system.pptx:` with nothing after the colon, and no PDF was created.
-- *The cause:* Morphix told LibreOffice to use its "svp" headless display mode. That mode only exists on macOS/Linux,
-  so on Windows LibreOffice quit silently without converting.
-- *The fix:* the mode is no longer forced on Windows, Morphix waits for LibreOffice through its console launcher
-  (`soffice.com`), and if a conversion ever fails the message now always says why.
-
-**2. Converting presentations on Windows was very slow (≈ 1.5 minutes for one file)**
-- *The cause:* every conversion started LibreOffice with a brand-new profile (its whole first-start cost each time),
-  and LibreOffice is slow at exporting presentations that contain many pictures.
-- *The fix:*
-  - When **Microsoft Office** is installed, Morphix now lets PowerPoint / Word / Excel export the PDF themselves —
-    much faster and with exactly the same look as in Office. It runs invisibly, never closes a PowerPoint you have
-    open, and falls back to LibreOffice automatically if Office is missing or does not answer.
-  - The LibreOffice profile is now kept between conversions, so every conversion after the first starts faster.
-
-**3. Overlapping text in the Studio sidebar**
-- *The error:* in the "Running in the background" card the lines were drawn on top of each other and the title was
-  cut off ("RUNNING IN THE BACKGROUN").
-- *The fix:* the card now measures the real height of the wrapped text and reserves it, in Arabic and English.
-
-**4. The Mac app could not be signed when built from the Desktop**
-- *The error:* `codesign … resource fork, Finder information, or similar detritus not allowed`
-  — an unsigned app does not open on Apple Silicon Macs.
-- *The cause:* the Desktop is synced with iCloud, which adds hidden Finder metadata to every file.
-- *The fix:* the build now runs outside iCloud, clears that metadata and verifies the signature.
-
-### Also in 1.7.1 (Windows)
-- Helper programs (FFmpeg, LibreOffice…) no longer flash black console windows.
-- Mac words in the interface are shown with their Windows names (Finder → File Explorer, menu bar → taskbar tray, ⌘ → Win).
-- The memory check for the "Finest edges" background-removal model works on Windows.
-- Without a console, Morphix writes its messages to `%LOCALAPPDATA%\Morphix\logs` for troubleshooting.
+### Earlier fixes (1.7.1 – 1.7.2)
+- Squeezed windows and cut-off text with the new font — fixed (1.7.2).
+- Office → PDF failed silently on Windows; much faster conversion with Microsoft Office when installed (1.7.1).
+- Overlapping text in the Studio sidebar; Mac app signing when built from an iCloud Desktop (1.7.1).
 
 > These builds are not digitally signed. Windows may show a SmartScreen warning (**More info → Run anyway**), and Smart App Control may block the app if it is turned on.

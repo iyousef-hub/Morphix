@@ -1,6 +1,7 @@
 """User-controlled launch-at-login (no elevated privileges, no background network).
 
 macOS: per-user LaunchAgent. Windows: per-user HKCU Run key.
+Linux: ~/.config/autostart/morphix.desktop (XDG autostart).
 Never enables launch-at-login without an explicit settings checkbox selection.
 """
 from __future__ import annotations
@@ -34,8 +35,23 @@ def _launch_args():
     return [str(py), str(root / 'main.py'), '--background']
 
 
+def _linux_autostart():
+    base = Path(os.environ.get('XDG_CONFIG_HOME', Path.home() / '.config'))
+    return base / 'autostart' / 'morphix.desktop'
+
+
+def _linux_args():
+    try:
+        from linux_integration import launch_command
+        return launch_command() + ['--background']
+    except Exception:
+        return _launch_args()
+
+
 def is_enabled():
     system = platform.system()
+    if system == 'Linux':
+        return _linux_autostart().is_file()
     if system == 'Darwin':
         return _mac_plist().is_file()
     if system == 'Windows':
@@ -85,5 +101,17 @@ def set_enabled(enabled: bool):
                     winreg.DeleteValue(key,'Morphix')
                 except FileNotFoundError:
                     pass
+    elif system == 'Linux':
+        path = _linux_autostart()
+        if not enabled:
+            if path.is_file():
+                path.unlink()
+            return
+        import shlex
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text('[Desktop Entry]\nType=Application\nName=Morphix\n'
+                        f"Exec={' '.join(shlex.quote(a) for a in _linux_args())}\n"
+                        'Icon=morphix\nTerminal=false\nX-GNOME-Autostart-enabled=true\n'
+                        'X-GNOME-Autostart-Delay=5\n', encoding='utf-8')
     elif enabled:
-        raise RuntimeError('Launch at login is supported on macOS and Windows only.')
+        raise RuntimeError('Launch at login is supported on macOS, Windows and Linux only.')

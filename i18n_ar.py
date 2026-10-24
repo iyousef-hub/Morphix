@@ -581,4 +581,6 @@ AR = {
         'هناك برنامج آخر يستخدم {keys}. اختر اختصارًا آخر من الإعدادات ← اختصار لوحة المفاتيح.',
     'The speech engine could not load on this computer ({error}). If Smart App Control is on, it blocks the engine files.':
         'تعذّر تشغيل محرك تحويل الكلام على هذا الجهاز ({error}). إذا كان «التحكم الذكي في التطبيقات» مفعّلًا فهو يمنع ملفات المحرك.',
+    'Add a keyboard shortcut in your system settings that runs: {cmd}':
+        'أضف اختصارًا من إعدادات لوحة المفاتيح في النظام يشغّل الأمر: {cmd}',
 }

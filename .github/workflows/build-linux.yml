@@ -1,0 +1,90 @@
+name: Build Linux
+
+# Builds Morphix-<version>-x86_64.AppImage on Ubuntu 22.04 (older glibc, so the
+# AppImage also runs on newer distributions).
+#  - Every push to main and every manual run: a downloadable artifact.
+#  - Called by the Release workflow.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-speech.txt
+
+      - name: System libraries (Qt on X11, bundled into the AppImage)
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q libxcb-cursor0 libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 \
+            libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxcb-xinerama0 libegl1 \
+            libfuse2 xvfb tesseract-ocr libreoffice-impress --no-install-recommends
+
+      - name: Install components
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt -r requirements-speech.txt "pyinstaller>=6.10,<7" pytest
+
+      - name: Check the speech engine loads
+        run: python -c "import av, faster_whisper, ctranslate2; print('speech engine OK')"
+
+      - name: Tests
+        continue-on-error: true
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python -m pytest -q tests
+
+      - name: Build the AppImage
+        env:
+          SKIP_PIP: '1'
+          PYTHON: python
+        run: ./Build_Morphix_Linux.sh
+
+      - name: Smoke test the AppImage (PDF, OCR, Office, video, Excel)
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: '1'
+        run: |
+          set -e
+          APP=$(ls dist/Morphix-*-x86_64.AppImage)
+          W=$RUNNER_TEMP/smoke; mkdir -p $W/out
+          python - "$W" <<'PY'
+          import json, sys, pymupdf, openpyxl, subprocess, imageio_ffmpeg
+          w = sys.argv[1]
+          d = pymupdf.open(); [d.new_page().insert_text((72, 72), 'Morphix smoke test') for _ in range(2)]; d.save(f'{w}/a.pdf')
+          wb = openpyxl.Workbook(); wb.active.append(['a', 1]); wb.save(f'{w}/b.xlsx')
+          subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(), '-y', '-loglevel', 'error', '-f', 'lavfi', '-i',
+                          'testsrc=size=320x240:rate=10:duration=2', '-f', 'lavfi', '-i', 'sine=duration=2', '-shortest', f'{w}/c.mp4'], check=True)
+          for i, (action, path) in enumerate([('pdf_png_zip', 'a.pdf'), ('ocr_searchable_pdf', 'a.pdf'),
+                                              ('xlsx_csv', 'b.xlsx'), ('video_mp3', 'c.mp4'), ('office_pdf', 'b.xlsx')]):
+              json.dump({'action': action, 'paths': [f'{w}/{path}'], 'out_dir': f'{w}/out', 'options': {}}, open(f'{w}/r{i}.json', 'w'))
+          PY
+          for i in 0 1 2 3 4; do
+            "$APP" --morphix-worker $W/r$i.json | grep -E '"completed"|"failed"' | cut -c1-200
+          done
+          ls -la $W/out
+          test "$(ls $W/out | wc -l)" -ge 5
+
+      - name: Version
+        run: echo "VERSION=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-linux
+          path: dist/Morphix-${{ env.VERSION }}-x86_64.AppImage
+          retention-days: 30

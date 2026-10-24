@@ -45,7 +45,7 @@ from app_assets import logo_png
 from i18n import tr
 import i18n
 
-APP_VERSION = '1.7.2'
+APP_VERSION = '1.8.0'
 
 PDF = {'.pdf'}
 IMAGE = {'.jpg', '.jpeg', '.png', '.webp', '.bmp', '.tif', '.tiff'}
@@ -476,6 +476,22 @@ def _forward_to_running_instance(name, command):
     return True
 
 
+def _hub_files_from_argv():
+    """`Morphix --hub FILE…` (right-click → Morphix on Linux): the files to open in the Action Hub."""
+    if '--hub' not in sys.argv:
+        return []
+    files = []
+    for arg in sys.argv[sys.argv.index('--hub') + 1:]:
+        if arg.startswith('--'):
+            break
+        if arg.startswith('file://'):
+            from urllib.parse import unquote, urlparse
+            arg = unquote(urlparse(arg).path)
+        if Path(arg).is_file():
+            files.append(str(Path(arg).resolve()))
+    return files[:2000]
+
+
 def _single_instance_server(app):
     """Enforce one Morphix GUI across ALL unpacked Morphix folders.
 
@@ -485,11 +501,21 @@ def _single_instance_server(app):
     """
     name = _instance_socket_name()
     args = set(sys.argv[1:])
-    command = ('settings' if '--settings' in args else
-               'wheel' if '--test-wheel' in args else
-               'noop' if '--background' in args else 'studio')
+    hub_files = _hub_files_from_argv()
+    if hub_files:
+        import json
+        command = 'wheel-paths:' + json.dumps(hub_files)
+    elif '--hotkey' in args:
+        command = 'hotkey'
+    else:
+        command = ('settings' if '--settings' in args else
+                   'wheel' if '--test-wheel' in args else
+                   'noop' if '--background' in args or '--hub' in args else 'studio')
     if _forward_to_running_instance(name, command):
-        print('[Morphix] Another background helper owns the per-user socket. Quit ALL older Morphix helpers before launching this folder.', flush=True)
+        if command.startswith('wheel-paths:') or command in ('hotkey', 'studio', 'settings'):
+            print('[Morphix] Sent to the running Morphix.', flush=True)
+        else:
+            print('[Morphix] Another background helper owns the per-user socket. Quit ALL older Morphix helpers before launching this folder.', flush=True)
         return None
     server = QLocalServer(app)
     if not server.listen(name):
@@ -591,8 +617,14 @@ if __name__ == '__main__':
     instance_server = _single_instance_server(app)
     if instance_server is None:
         sys.exit(0)  # another copy owns the wheel; do not make a second one
-    if '--background' not in sys.argv:
+    if not ({'--background', '--hub', '--hotkey'} & set(sys.argv)):
         SplashDialog().exec()  # branded splash only on manual launch
+    if sys.platform.startswith('linux'):
+        try:
+            import linux_integration
+            linux_integration.install()
+        except Exception as exc:
+            print('[Morphix] Linux desktop integration failed:', exc, flush=True)
     # Start with the computer by default (once). The user can turn it off in
     # Settings → Startup & background.
     _prefs = QSettings('Morphix', 'Morphix')
@@ -617,6 +649,9 @@ if __name__ == '__main__':
                     pass
                 elif command == 'wheel':
                     QTimer.singleShot(0, controller.test_wheel)
+                elif command == 'hotkey':
+                    # Linux desktop keyboard shortcut (Wayland) runs `Morphix --hotkey`.
+                    QTimer.singleShot(0, controller.hotkey_triggered.emit)
                 elif command == 'settings':
                     QTimer.singleShot(0, controller.open_preferences)
                 elif command == 'restart':
@@ -665,7 +700,12 @@ if __name__ == '__main__':
 
     def show_initial_ui():
         args = set(sys.argv[1:])
-        if '--studio' in args:
+        hub_files = _hub_files_from_argv()
+        if hub_files:
+            controller.show_wheel(paths_override=hub_files)
+        elif '--hotkey' in args:
+            controller.hotkey_triggered.emit()
+        elif '--studio' in args:
             print('[Morphix] Opening Studio (--studio)', flush=True)
             controller.open_studio()
         elif '--settings' in args:

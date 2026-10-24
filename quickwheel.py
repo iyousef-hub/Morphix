@@ -207,6 +207,11 @@ def get_explorer_selection():
         return finder_selected_files()
     if platform.system() == 'Windows':
         return explorer_selected_files()
+    if platform.system() == 'Linux':
+        # File managers on Linux have no common "current selection" API; use
+        # the files copied with Ctrl+C (and the right-click Morphix action).
+        from linux_integration import clipboard_files
+        return clipboard_files()
     return []
 
 
@@ -569,7 +574,8 @@ class WheelWindow(QWidget):
         QTimer.singleShot(0, lambda a=action: self.action_requested.emit(a))
 
     def display(self):
-        from hub_panel import place_rect
+        from hub_panel import place_rect, apply_shape_mask
+        apply_shape_mask(self, 'ellipse', inset=max(6, self.width() // 30))
         pointer = QCursor.pos()
         prefs = QSettings('Morphix', 'Morphix')
         remembered = None
@@ -923,10 +929,27 @@ class QuickWheelController(QObject):
                 # APIs may assert when called from a non-main dispatch queue.
                 from native_hotkeys import MacGlobalHotkey
                 self.hotkeys = MacGlobalHotkey(shortcut, self.hotkey_triggered.emit)
+            elif platform.system() == 'Linux':
+                import linux_hotkeys
+                self.hotkeys = linux_hotkeys.create(shortcut, self.hotkey_triggered.emit)
+                try:
+                    self.hotkeys.start()
+                except RuntimeError as exc:
+                    if str(exc) not in ('NO_X11', 'ALREADY_REGISTERED'):
+                        raise
+                    # Wayland, or the key is taken on X11: let the desktop run `Morphix --hotkey`.
+                    self.hotkeys = linux_hotkeys.DesktopShortcut(shortcut, self.hotkey_triggered.emit)
+                    try:
+                        self.hotkeys.start()
+                    except RuntimeError:
+                        if str(exc) == 'ALREADY_REGISTERED':
+                            raise exc
+                        raise RuntimeError('MANUAL_SHORTCUT')
             else:
                 from windows_hotkeys import WindowsGlobalHotkey
                 self.hotkeys = WindowsGlobalHotkey(shortcut, self.hotkey_triggered.emit)
-            self.hotkeys.start()
+            if platform.system() != 'Linux':
+                self.hotkeys.start()
             print(f'[Morphix] Hotkey monitor installed: {shortcut} '
                   f'({getattr(self.hotkeys, "mode", None) or "permission may still be required"}).', flush=True)
             if platform.system() == 'Darwin':
@@ -937,6 +960,10 @@ class QuickWheelController(QObject):
                 from shortcut_logic import display_shortcut
                 message = tr('Another program already uses {keys}. Choose a different shortcut in Settings → Keyboard shortcut.',
                              keys=display_shortcut(shortcut, False))
+            elif 'MANUAL_SHORTCUT' in str(exc):
+                from linux_integration import manual_shortcut_command
+                message = tr('Add a keyboard shortcut in your system settings that runs: {cmd}',
+                             cmd=manual_shortcut_command())
             else:
                 message = f'{exc}. ' + tr('Use the Morphix menu instead.')
             print(f'[Morphix] Shortcut unavailable: {exc}', flush=True)
