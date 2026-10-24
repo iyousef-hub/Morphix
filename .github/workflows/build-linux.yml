@@ -34,7 +34,7 @@ jobs:
           sudo apt-get update -q
           sudo apt-get install -y -q libxcb-cursor0 libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 \
             libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxcb-xinerama0 libegl1 \
-            libfuse2 xvfb tesseract-ocr libreoffice-impress --no-install-recommends
+            libreoffice-calc-nogui --no-install-recommends
 
       - name: Install components
         run: |
@@ -75,7 +75,9 @@ jobs:
               json.dump({'action': action, 'paths': [f'{w}/{path}'], 'out_dir': f'{w}/out', 'options': {}}, open(f'{w}/r{i}.json', 'w'))
           PY
           for i in 0 1 2 3 4; do
-            "$APP" --morphix-worker $W/r$i.json | grep -E '"completed"|"failed"' | cut -c1-200
+            line=$("$APP" --morphix-worker $W/r$i.json 2>&1 | grep -E '"completed"|"failed"' | tail -1 | cut -c1-400 || true)
+            echo "$line"
+            case "$line" in *'"completed"'*) echo "::notice::smoke $i OK";; *) echo "::error::smoke $i: ${line:-no result}";; esac
           done
           ls -la $W/out
           test "$(ls $W/out | wc -l)" -ge 5
