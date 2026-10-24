@@ -1,12 +1,21 @@
-## Morphix 1.7.1 — Bug fixes
+## Morphix 1.7.2 — Bug fixes
 
 Every file tool you need — one shortcut away. PDF, images, Office, audio & video, OCR and offline speech-to-text.
 
 ### Download
-- **Windows:** `Morphix_Windows_1.7.1.zip` — unzip it and run `Morphix.exe` (keep it together with the `_internal` folder).
-- **macOS (Apple Silicon):** `Morphix_macOS_1.7.1.dmg` — open it and drag Morphix into Applications. The first time, right-click Morphix → **Open**.
+- **Windows:** `Morphix_Windows_1.7.2.zip` — unzip it and run `Morphix.exe` (keep it together with the `_internal` folder).
+- **macOS (Apple Silicon):** `Morphix_macOS_1.7.2.dmg` — open it and drag Morphix into Applications. The first time, right-click Morphix → **Open**.
 
 ### Bug fixes
+
+**Squeezed windows and cut-off text** *(new in 1.7.2)*
+- *The error:* some windows opened too short — the drop-down menus were squashed so their text was unreadable, and
+  the last lines of longer texts were cut off (Speech → Text, Remove background, About, Compression).
+- *The cause:* the new IBM Plex Sans Arabic font is taller than the old one, and Qt sized each window before
+  measuring how tall its wrapped text becomes.
+- *The fix:* every window now measures its real content height when it opens and grows to fit (never beyond the screen).
+
+### Fixed in 1.7.1
 
 **1. Office → PDF failed on Windows with an empty error**
 - *The error:* converting a PowerPoint/Word/Excel file showed
@@ -36,7 +45,7 @@ Every file tool you need — one shortcut away. PDF, images, Office, audio & vid
 - *The cause:* the Desktop is synced with iCloud, which adds hidden Finder metadata to every file.
 - *The fix:* the build now runs outside iCloud, clears that metadata and verifies the signature.
 
-### Also in this version (Windows)
+### Also in 1.7.1 (Windows)
 - Helper programs (FFmpeg, LibreOffice…) no longer flash black console windows.
 - Mac words in the interface are shown with their Windows names (Finder → File Explorer, menu bar → taskbar tray, ⌘ → Win).
 - The memory check for the "Finest edges" background-removal model works on Windows.

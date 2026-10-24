@@ -1,3 +1,9 @@
+## v1.7.2 — Dialog layout fix
+
+- **Squeezed dialogs**: with the tall IBM Plex Sans Arabic font, some windows opened too short — drop-downs were
+  squashed and the last lines of wrapped text were cut off (Speech → Text, Remove background, About, Compression).
+  Every dialog now grows to the height its content really needs when it opens (never past the screen).
+
 ## v1.7.1 — Bug fixes
 
 - **Windows · Office → PDF failed silently** (`Office conversion failed for <file>:` with an empty reason):

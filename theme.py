@@ -94,6 +94,53 @@ def apply_palette(app):
     app.setStyleSheet(GLOBAL_CSS)
 
 
+class _DialogFitter:
+    """Grow every dialog to the height its content really needs when it opens.
+
+    Qt sizes a new window from its layout's plain size hint, which ignores how
+    much taller word-wrapped text becomes at the window's actual width. With a
+    tall font (IBM Plex Sans Arabic) this squeezed drop-downs and cut off the
+    last lines of wrapped labels. Only ever grows, and never past the screen.
+    """
+
+    def __init__(self, app):
+        from PySide6.QtCore import QObject, QEvent
+
+        class Filter(QObject):
+            def eventFilter(self, obj, event):
+                if event.type() == QEvent.Show:
+                    from PySide6.QtWidgets import QDialog
+                    if isinstance(obj, QDialog):
+                        fit_height(obj)
+                return False
+        self.filter = Filter(app)
+        app.installEventFilter(self.filter)
+
+
+def fit_height(window):
+    layout = window.layout()
+    if layout is None:
+        return
+    layout.activate()
+    width = window.width()
+    if layout.hasHeightForWidth():
+        need = layout.totalHeightForWidth(width)
+    else:
+        need = layout.totalSizeHint().height()
+    need = max(need, layout.totalMinimumSize().height())
+    screen = window.screen()
+    if screen is not None:
+        need = min(need, screen.availableGeometry().height() - 40)
+    if need > window.height():
+        window.resize(width, need)
+
+
+_fitter = None
+
+
 def apply(app):
+    global _fitter
     apply_font(app)
     apply_palette(app)
+    if _fitter is None:
+        _fitter = _DialogFitter(app)
