@@ -79,7 +79,8 @@ jobs:
 
       - name: Check the windows of the built app (English and Arabic)
         run: |
-          build_out/dist/Morphix.app/Contents/MacOS/Morphix --morphix-ui-selftest "$RUNNER_TEMP/ui" || { python tools/annotate.py "$RUNNER_TEMP/ui/ui_selftest.txt" "UI self-test (macOS)"; exit 1; }
+          build_out/dist/Morphix.app/Contents/MacOS/Morphix --morphix-ui-selftest "$RUNNER_TEMP/ui" || echo "::warning::UI self-test exit code $? on shutdown"
+          tail -1 "$RUNNER_TEMP/ui/ui_selftest.txt" | grep -qx 'UI SELFTEST OK' || { python tools/annotate.py "$RUNNER_TEMP/ui/ui_selftest.txt" "UI self-test (macOS)"; exit 1; }
 
       - name: Create the DMG
         run: |

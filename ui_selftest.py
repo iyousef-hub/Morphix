@@ -36,6 +36,11 @@ def run(folder):
     app = QApplication.instance() or QApplication(sys.argv[:1])
     import i18n
     results = []
+    keep = []
+
+    def track(widget):
+        keep.append(widget)
+        return widget
     report_file = folder / 'ui_selftest.txt'
     report_file.write_text('', encoding='utf-8')
 
@@ -61,12 +66,12 @@ def run(folder):
 
         check(f'{lang} actions', lambda: [ACTIONS[k] for k in supported_actions([str(pdf)]) if k in
                                           ('organize_pdf', 'sign_pdf', 'pdf_word')])
-        check(f'{lang} ppt', lambda: ad.PptDialog([str(png)]).options())
-        check(f'{lang} ocr', lambda: ad.OcrChoiceDialog([str(png)], 'ocr_image_text').options())
-        check(f'{lang} ocr pdf', lambda: ad.OcrChoiceDialog([str(pdf)], 'extract_pdf_text').options())
+        check(f'{lang} ppt', lambda: track(ad.PptDialog([str(png)])).options())
+        check(f'{lang} ocr', lambda: track(ad.OcrChoiceDialog([str(png)], 'ocr_image_text')).options())
+        check(f'{lang} ocr pdf', lambda: track(ad.OcrChoiceDialog([str(pdf)], 'extract_pdf_text')).options())
 
         def organize():
-            d = ad.PageOrganizer(str(pdf))
+            d = track(ad.PageOrganizer(str(pdf)))
             for _ in range(10):
                 app.processEvents()
             d.list.item(0).setSelected(True)
@@ -78,7 +83,7 @@ def run(folder):
         check(f'{lang} organize', organize)
 
         def sign(kind, paths):
-            d = sd.SignatureDialog(paths, kind)
+            d = track(sd.SignatureDialog(paths, kind))
             d.show()
             d.tabs.setCurrentIndex(0)
             d.pad.strokes.append((QColor('#1A3FA8'), 3.0, [QPointF(20, 40), QPointF(80, 10), QPointF(140, 45)]))
@@ -97,7 +102,7 @@ def run(folder):
 
         def addons():
             from addons import AddonsDialog
-            d = AddonsDialog()
+            d = track(AddonsDialog())
             d.show(); app.processEvents(); d.close()
             return 'ok'
         check(f'{lang} add-ons', addons)
@@ -114,6 +119,19 @@ def run(folder):
             return 'ok'
         check(f'{lang} hub icons', hub_icons)
 
+    # Close every window the test opened before Qt shuts down.
+    for widget in keep:
+        try:
+            widget.close()
+            widget.deleteLater()
+        except Exception:
+            pass
+    keep.clear()
+    for _ in range(3):
+        app.processEvents()
+    import gc
+    gc.collect()
+    app.processEvents()
     try:
         sys.stdout.reconfigure(encoding='utf-8', errors='replace')
     except Exception:
