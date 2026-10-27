@@ -19,6 +19,11 @@ if [[ "${SKIP_PIP:-0}" != 1 ]]; then
   echo '▸ Installing the build tools…'
   "$PY" -m pip install -q -r requirements.txt -r requirements-speech.txt 'pyinstaller>=6.10,<7'
 fi
+# OpenCV's desktop build ships its own Qt, which clashes with PySide6 — use the headless one.
+if "$PY" -m pip show -q opencv-python >/dev/null 2>&1 || "$PY" -m pip show -q opencv-contrib-python >/dev/null 2>&1; then
+  "$PY" -m pip uninstall -q -y opencv-python opencv-contrib-python || true
+  "$PY" -m pip install -q --force-reinstall --no-deps 'opencv-python-headless<5'
+fi
 
 # Qt 6.5+ needs libxcb-cursor on X11; many desktops do not install it, so bundle it.
 EXTRA=()
@@ -33,12 +38,12 @@ rm -rf "$WORK/dist" "$WORK/build"
   --distpath "$WORK/dist" --workpath "$WORK/build" --specpath "$WORK" --paths "$ROOT" \
   --name Morphix \
   --collect-all imageio_ffmpeg --collect-all pymupdf \
-  --collect-all faster_whisper --collect-all ctranslate2 --collect-all onnxruntime \
+  --collect-all faster_whisper --collect-all ctranslate2 --collect-all onnxruntime --collect-all rapidocr --collect-all pillow_heif --collect-all pdf2docx --collect-all docx --collect-all bidi --hidden-import cv2 \
   --collect-submodules huggingface_hub --collect-submodules tokenizers --collect-submodules openpyxl \
   --collect-submodules Xlib \
   --hidden-import worker_process --hidden-import engine_core --hidden-import transcription_engine \
   --hidden-import hub_panel --hidden-import i18n_ar --hidden-import ui_kit --hidden-import win_compat \
-  --hidden-import docs_engine --hidden-import background_engine --hidden-import background_dialog \
+  --hidden-import tools_engine --hidden-import ocr_models --hidden-import latex_ocr --hidden-import action_dialogs --hidden-import signature_dialog --hidden-import docs_engine --hidden-import background_engine --hidden-import background_dialog \
   --hidden-import theme --hidden-import linux_hotkeys --hidden-import linux_integration \
   "${EXTRA[@]}" \
   --add-data "$ROOT/assets:assets" "$ROOT/main.py"

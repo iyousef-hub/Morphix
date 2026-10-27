@@ -56,31 +56,18 @@ jobs:
           PYTHON: python
         run: ./Build_Morphix_Linux.sh
 
-      - name: Smoke test the AppImage (PDF, OCR, Office, video, Excel)
+      - name: Smoke test the AppImage (every engine, Office, add-on downloads)
         env:
           APPIMAGE_EXTRACT_AND_RUN: '1'
+        run: python tools/smoke_build.py "$(ls $PWD/dist/Morphix-*-x86_64.AppImage)" --office --downloads
+
+      - name: Check the windows of the AppImage (English and Arabic)
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: '1'
+          QT_QPA_PLATFORM: offscreen
         run: |
-          set -e
           APP=$(ls dist/Morphix-*-x86_64.AppImage)
-          W=$RUNNER_TEMP/smoke; mkdir -p $W/out
-          python - "$W" <<'PY'
-          import json, sys, pymupdf, openpyxl, subprocess, imageio_ffmpeg
-          w = sys.argv[1]
-          d = pymupdf.open(); [d.new_page().insert_text((72, 72), 'Morphix smoke test') for _ in range(2)]; d.save(f'{w}/a.pdf')
-          wb = openpyxl.Workbook(); wb.active.append(['a', 1]); wb.save(f'{w}/b.xlsx')
-          subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(), '-y', '-loglevel', 'error', '-f', 'lavfi', '-i',
-                          'testsrc=size=320x240:rate=10:duration=2', '-f', 'lavfi', '-i', 'sine=duration=2', '-shortest', f'{w}/c.mp4'], check=True)
-          for i, (action, path) in enumerate([('pdf_png_zip', 'a.pdf'), ('ocr_searchable_pdf', 'a.pdf'),
-                                              ('xlsx_csv', 'b.xlsx'), ('video_mp3', 'c.mp4'), ('office_pdf', 'b.xlsx')]):
-              json.dump({'action': action, 'paths': [f'{w}/{path}'], 'out_dir': f'{w}/out', 'options': {}}, open(f'{w}/r{i}.json', 'w'))
-          PY
-          for i in 0 1 2 3 4; do
-            line=$("$APP" --morphix-worker $W/r$i.json 2>&1 | grep -E '"completed"|"failed"' | tail -1 | cut -c1-400 || true)
-            echo "$line"
-            case "$line" in *'"completed"'*) echo "::notice::smoke $i OK";; *) echo "::error::smoke $i: ${line:-no result}";; esac
-          done
-          ls -la $W/out
-          test "$(ls $W/out | wc -l)" -ge 5
+          "$APP" --morphix-ui-selftest "$RUNNER_TEMP/ui" || { python tools/annotate.py "$RUNNER_TEMP/ui/ui_selftest.txt" "UI self-test (Linux)"; exit 1; }
 
       - name: Version
         run: echo "VERSION=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_ENV"

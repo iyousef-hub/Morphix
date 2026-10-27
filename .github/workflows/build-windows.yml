@@ -8,7 +8,6 @@ name: Build Windows
 on:
   push:
     branches: [main]
-    tags: ['v*']
   workflow_dispatch:
   workflow_call:
 
@@ -52,30 +51,28 @@ jobs:
           --distpath build_out\dist --workpath build_out\build --specpath build_out --paths "%CD%"
           --name Morphix --icon "%CD%\assets\morphix.ico"
           --collect-all imageio_ffmpeg --collect-all pymupdf
-          --collect-all faster_whisper --collect-all ctranslate2 --collect-all onnxruntime
+          --collect-all faster_whisper --collect-all ctranslate2 --collect-all onnxruntime --collect-all rapidocr --collect-all pillow_heif --collect-all pdf2docx --collect-all docx --collect-all bidi --hidden-import cv2
           --collect-submodules huggingface_hub --collect-submodules tokenizers --collect-submodules openpyxl
           --hidden-import win32com.client --hidden-import pythoncom --hidden-import pywintypes
           --hidden-import worker_process --hidden-import engine_core --hidden-import transcription_engine
           --hidden-import hub_panel --hidden-import i18n_ar --hidden-import ui_kit --hidden-import win_compat
-          --hidden-import docs_engine --hidden-import background_engine --hidden-import background_dialog
+          --hidden-import tools_engine --hidden-import ocr_models --hidden-import latex_ocr --hidden-import action_dialogs --hidden-import signature_dialog --hidden-import docs_engine --hidden-import background_engine --hidden-import background_dialog
           --hidden-import windows_hotkeys --hidden-import theme --hidden-import ms_office
           --hidden-import win32gui --hidden-import win32com.shell.shell
           --add-data "%CD%\assets;assets" "%CD%\main.py"
 
-      - name: Smoke test the built app (PDF engine in worker mode)
+      - name: Smoke test the built app (every engine, add-on downloads)
+        run: python tools/smoke_build.py build_out\dist\Morphix\Morphix.exe --downloads
+
+      - name: Check the windows of the built app (English and Arabic)
         shell: pwsh
         run: |
-          $work = Join-Path $env:RUNNER_TEMP 'smoke'
-          New-Item -ItemType Directory -Force -Path "$work\out" | Out-Null
-          python -c "import pymupdf,sys; d=pymupdf.open(); [d.new_page() for _ in range(3)]; d.save(sys.argv[1])" "$work\sample.pdf"
-          $req = @{ action = 'pdf_png_zip'; paths = @("$work\sample.pdf"); out_dir = "$work\out"; options = @{} } | ConvertTo-Json -Compress
-          Set-Content -Path "$work\req.json" -Value $req -Encoding utf8
-          $p = Start-Process -FilePath build_out\dist\Morphix\Morphix.exe -ArgumentList '--morphix-worker', "$work\req.json" -PassThru -Wait
-          Get-ChildItem "$work\out" | Format-Table Name, Length
-          $log = Join-Path $env:LOCALAPPDATA 'Morphix\logs\morphix.log'
-          if (Test-Path $log) { Get-Content $log -Tail 40 }
-          if (-not (Get-ChildItem "$work\out")) { throw "The built app could not convert a PDF (exit $($p.ExitCode))" }
-          Write-Host "Smoke test OK"
+          $dir = Join-Path $env:RUNNER_TEMP 'ui'
+          $env:QT_QPA_PLATFORM = 'offscreen'
+          $p = Start-Process -FilePath build_out\dist\Morphix\Morphix.exe -ArgumentList '--morphix-ui-selftest', "$dir" -PassThru -Wait
+          if (Test-Path "$dir\ui_selftest.txt") { Get-Content "$dir\ui_selftest.txt" }
+          if ($p.ExitCode -ne 0) { python tools/annotate.py "$dir\ui_selftest.txt" "UI self-test (Windows)"; throw "UI self-test failed (exit $($p.ExitCode))" }
+          Write-Host "UI self-test OK"
 
       - name: Package
         shell: pwsh
@@ -96,11 +93,3 @@ jobs:
           name: release-windows
           path: ${{ env.ZIP }}
           retention-days: 7
-
-      - name: Attach to the release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          name: Morphix ${{ github.ref_name }}
-          body_path: .github/release-notes.md
-          files: ${{ env.ZIP }}

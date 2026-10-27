@@ -72,12 +72,12 @@ if exist "%WORK%\dist" rmdir /s /q "%WORK%\dist"
   --distpath "%WORK%\dist" --workpath "%WORK%\build" --specpath "%WORK%" --paths "%ROOT%" ^
   --name Morphix --icon "%ROOT%\assets\morphix.ico" ^
   --collect-all imageio_ffmpeg --collect-all pymupdf ^
-  --collect-all faster_whisper --collect-all ctranslate2 --collect-all onnxruntime ^
+  --collect-all faster_whisper --collect-all ctranslate2 --collect-all onnxruntime --collect-all rapidocr --collect-all pillow_heif --collect-all pdf2docx --collect-all docx --collect-all bidi --hidden-import cv2 ^
   --collect-submodules huggingface_hub --collect-submodules tokenizers --collect-submodules openpyxl ^
   --hidden-import win32com.client --hidden-import pythoncom --hidden-import pywintypes ^
   --hidden-import worker_process --hidden-import engine_core --hidden-import transcription_engine ^
   --hidden-import hub_panel --hidden-import i18n_ar --hidden-import ui_kit --hidden-import win_compat ^
-  --hidden-import docs_engine --hidden-import background_engine --hidden-import background_dialog ^
+  --hidden-import tools_engine --hidden-import ocr_models --hidden-import latex_ocr --hidden-import action_dialogs --hidden-import signature_dialog --hidden-import docs_engine --hidden-import background_engine --hidden-import background_dialog ^
   --hidden-import windows_hotkeys --hidden-import theme --hidden-import ms_office ^
   --hidden-import win32gui --hidden-import win32com.shell.shell ^
   --add-data "%ROOT%\assets;assets" "%ROOT%\main.py" >> "%LOG%" 2>&1 || goto :error

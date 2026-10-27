@@ -170,9 +170,9 @@ def test_missing_model_message(tmp_path, monkeypatch):
 def test_actions_offered_for_audio_and_video(tmp_path):
     import ast
     tree = ast.parse((ROOT / 'main.py').read_text(encoding='utf-8'))
-    fn = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == 'supported_actions')
+    fns = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name in ('supported_actions', '_supported_base')]
     ns = {}
-    exec(compile(ast.Module(body=[fn], type_ignores=[]), 'sa', 'exec'), ns)
+    exec(compile(ast.Module(body=fns, type_ignores=[]), 'sa', 'exec'), ns)
     for name in ('a.mp4', 'b.mov', 'c.mp3', 'd.wav', 'e.m4a', 'f.m4b', 'g.opus'):
         p = tmp_path / name
         p.write_bytes(b'\0' * 32)

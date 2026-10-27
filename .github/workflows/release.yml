@@ -1,9 +1,11 @@
 name: Release
 
-# Actions → Release → Run workflow: builds Windows, macOS and Linux, then publishes
-# a GitHub Release (v<VERSION>) with both downloads attached.
+# Push a tag such as v1.9.0 (or Actions → Release → Run workflow): builds Windows,
+# macOS and Linux, then publishes the GitHub Release with all three downloads.
 
 on:
+  push:
+    tags: ['v*']
   workflow_dispatch:
 
 permissions:

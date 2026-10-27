@@ -4,7 +4,8 @@ from PyInstaller.utils.hooks import collect_all
 
 datas = [('assets', 'assets')]
 binaries = []
-hiddenimports = ['worker_process', 'engine_core', 'transcription_engine', 'hub_panel', 'i18n_ar', 'ui_kit', 'docs_engine', 'background_engine', 'background_dialog']
+hiddenimports = ['worker_process', 'engine_core', 'transcription_engine', 'hub_panel', 'i18n_ar', 'ui_kit', 'docs_engine', 'background_engine', 'background_dialog',
+                 'tools_engine', 'ocr_models', 'latex_ocr', 'action_dialogs', 'signature_dialog', 'cv2']
 hiddenimports += collect_submodules('huggingface_hub')
 hiddenimports += collect_submodules('tokenizers')
 hiddenimports += collect_submodules('AppKit')
@@ -21,6 +22,9 @@ tmp_ret = collect_all('ctranslate2')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 tmp_ret = collect_all('onnxruntime')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+for _pkg in ('rapidocr', 'pillow_heif', 'pdf2docx', 'docx', 'bidi'):
+    tmp_ret = collect_all(_pkg)
+    datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 
 a = Analysis(

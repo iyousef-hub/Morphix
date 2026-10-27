@@ -24,15 +24,15 @@ from PySide6.QtWidgets import (QWidget, QApplication, QDialog, QVBoxLayout, QHBo
     QSystemTrayIcon, QMenu, QMessageBox, QCheckBox, QFrame, QSpinBox, QSlider)
 
 PROFILES = {
-    'pdf_single': ('One PDF', ['ocr_searchable_pdf','extract_pdf_text','optimize_pdf','pdf_png_zip','split_pdf','visual_pdf','separate_pdf']),
+    'pdf_single': ('One PDF', ['ocr_searchable_pdf','organize_pdf','sign_pdf','optimize_pdf','pdf_word','extract_pdf_text','pdf_png_zip','split_pdf','visual_pdf']),
     'pdf_image_mix': ('PDF + Images', ['merge_pdf','merge_optimize','zip_files','tar_gz_files','rar_files']),
-    'pdf_multi': ('Multiple PDFs', ['merge_pdf','merge_optimize','ocr_searchable_pdf','optimize_pdf','extract_pdf_text','pdf_png_zip','zip_files']),
-    'image_single': ('One image', ['remove_bg','images_pdf','ocr_image_text','visual_image','image_compress','image_jpg','more_actions']),
-    'image_multi': ('Multiple images', ['images_pdf','remove_bg','ocr_image_text','image_jpg','image_compress','zip_files']),
-    'video_single': ('One video', ['transcribe_media','video_mp3','video_mp4','zip_files']),
-    'video_multi': ('Multiple videos', ['transcribe_media','join_video','video_mp3','video_mp4','zip_files']),
-    'audio_single': ('One audio', ['transcribe_media','audio_mp3','zip_files']),
-    'audio_multi': ('Multiple audio', ['transcribe_media','join_audio','audio_mp3','zip_files']),
+    'pdf_multi': ('Multiple PDFs', ['merge_pdf','merge_optimize','sign_pdf','ocr_searchable_pdf','optimize_pdf','extract_pdf_text','pdf_png_zip','zip_files']),
+    'image_single': ('One image', ['heic_jpg','remove_bg','images_pdf','ocr_image_text','sign_images','visual_image','image_compress','image_jpg','more_actions']),
+    'image_multi': ('Multiple images', ['heic_jpg','images_pdf','remove_bg','sign_images','ocr_image_text','image_jpg','image_compress','zip_files']),
+    'video_single': ('One video', ['ppt_media','trim_media','transcribe_media','video_mp3','video_mp4','zip_files']),
+    'video_multi': ('Multiple videos', ['ppt_media','transcribe_media','join_video','video_mp3','video_mp4','zip_files']),
+    'audio_single': ('One audio', ['ppt_media','trim_media','transcribe_media','audio_mp3','zip_files']),
+    'audio_multi': ('Multiple audio', ['ppt_media','transcribe_media','join_audio','audio_mp3','zip_files']),
     'office': ('Word / PowerPoint files', ['office_pdf','docs_merge_pdf','zip_files','tar_gz_files']),
     'excel_single': ('One Excel file', ['office_pdf','xlsx_pdf_fit','xlsx_csv','xlsx_split','csv_xlsx','zip_files']),
     'excel_multi': ('Multiple Excel files', ['xlsx_merge','docs_merge_pdf','office_pdf','xlsx_csv','csv_xlsx','zip_files']),
@@ -61,6 +61,9 @@ WHEEL_LABELS = {
     'xlsx_pdf_fit': ('PDF · fit sheets','pdf'), 'xlsx_csv': ('To CSV','table'),
     'xlsx_split': ('Split sheets','split'), 'xlsx_merge': ('Merge workbooks','merge'),
     'csv_xlsx': ('To Excel','table'),
+    'ppt_media': ('PowerPoint-ready','slides'), 'trim_media': ('Trim','trim'),
+    'heic_jpg': ('HEIC → JPG','image'), 'pdf_word': ('To Word','word'),
+    'organize_pdf': ('Organize pages','pages'), 'sign_pdf': ('Sign','sign'), 'sign_images': ('Signature','sign'),
     'more_actions': ('More tools','more'), 'studio': ('Open Studio','more'),
 }
 
@@ -290,6 +293,23 @@ def _draw_action_icon(p, x, y, kind, color):
     elif kind == 'table':
         p.drawRoundedRect(QRectF(-12, -10, 24, 20), 2, 2)
         p.drawLine(-12, -3, 12, -3); p.drawLine(-12, 4, 12, 4); p.drawLine(-4, -10, -4, 10); p.drawLine(4, -10, 4, 10)
+    elif kind == 'slides':
+        p.drawRoundedRect(QRectF(-13, -10, 26, 18), 2, 2)
+        p.drawLine(0, 8, 0, 13); p.drawLine(-5, 13, 5, 13)
+        tri = QPainterPath(QPointF(-3, -5)); tri.lineTo(5, -1); tri.lineTo(-3, 3); tri.closeSubpath(); p.drawPath(tri)
+    elif kind == 'trim':
+        p.drawEllipse(QPointF(-7, 7), 4, 4); p.drawEllipse(QPointF(7, 7), 4, 4)
+        p.drawLine(-4, 4, 9, -12); p.drawLine(4, 4, -9, -12)
+    elif kind == 'word':
+        p.drawRoundedRect(QRectF(-10, -12, 20, 24), 2, 2)
+        f = QFont('Arial', 8, QFont.Bold); p.setFont(f)
+        p.drawText(QRectF(-11, -6, 22, 17), Qt.AlignCenter, 'DOC')
+    elif kind == 'pages':
+        for gx, gy in ((-11, -11), (1, -11), (-11, 1), (1, 1)):
+            p.drawRoundedRect(QRectF(gx, gy, 10, 10), 1.5, 1.5)
+    elif kind == 'sign':
+        path = QPainterPath(QPointF(-12, 4)); path.cubicTo(-8, -10, -4, 10, 0, -2); path.cubicTo(3, -9, 6, 8, 12, -1)
+        p.drawPath(path); p.drawLine(-12, 11, 12, 11)
     elif kind == 'audio':
         p.drawLine(2,-11,2,7);p.drawLine(2,-11,10,-13)
         p.drawEllipse(QRectF(-6,4,9,7));p.drawEllipse(QRectF(4,2,9,7))
@@ -1286,7 +1306,10 @@ class QuickWheelController(QObject):
         defaults = PROFILES[profile][1]
         candidates = config if isinstance(config, list) else defaults
         # Give existing users the newly added actions once (they can remove them).
-        for new_key, flag in (('transcribe_media', 'wheel_v15_transcribe/'), ('ocr_searchable_pdf', 'wheel_v16_ocr/')):
+        for new_key, flag in (('transcribe_media', 'wheel_v15_transcribe/'), ('ocr_searchable_pdf', 'wheel_v16_ocr/'),
+                              ('organize_pdf', 'wheel_v19_organize/'), ('sign_pdf', 'wheel_v19_sign/'),
+                              ('sign_images', 'wheel_v19_sign/'), ('ppt_media', 'wheel_v19_ppt/'),
+                              ('heic_jpg', 'wheel_v19_heic/')):
             if (isinstance(config, list) and new_key in allowed and new_key not in candidates
                     and not self.settings.value(flag + profile, False, type=bool)):
                 candidates = [new_key] + list(candidates)[:7]
@@ -1517,6 +1540,15 @@ class QuickWheelController(QObject):
             if chosen is None:
                 return
             options = chosen
+        try:
+            from action_dialogs import ask_action_options
+            extra = ask_action_options(action, paths)
+        except Exception as exc:
+            QMessageBox.warning(None, tr('Morphix'), str(exc))
+            return
+        if extra is None:
+            return
+        options.update(extra)
         parents = {str(Path(p).parent) for p in paths}
         folder = next(iter(parents)) if len(parents) == 1 else str(Path.home() / 'Documents' / 'Morphix Output')
         Path(folder).mkdir(parents=True, exist_ok=True)

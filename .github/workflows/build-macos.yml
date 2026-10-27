@@ -7,7 +7,6 @@ name: Build macOS
 on:
   push:
     branches: [main]
-    tags: ['v*']
   workflow_dispatch:
   workflow_call:
 
@@ -55,12 +54,12 @@ jobs:
             --distpath build_out/dist --workpath build_out/build --specpath build_out --paths "$PWD" \
             --name Morphix --osx-bundle-identifier com.iyousefhub.morphix \
             --collect-all imageio_ffmpeg --collect-all pymupdf \
-            --collect-all faster_whisper --collect-all ctranslate2 --collect-all onnxruntime \
+            --collect-all faster_whisper --collect-all ctranslate2 --collect-all onnxruntime --collect-all rapidocr --collect-all pillow_heif --collect-all pdf2docx --collect-all docx --collect-all bidi --hidden-import cv2 \
             --collect-submodules huggingface_hub --collect-submodules tokenizers \
             --collect-submodules AppKit --collect-submodules Foundation --collect-submodules objc \
             --hidden-import worker_process --hidden-import engine_core --hidden-import transcription_engine \
             --hidden-import hub_panel --hidden-import i18n_ar --hidden-import ui_kit --hidden-import theme \
-            --hidden-import docs_engine --hidden-import background_engine --hidden-import background_dialog \
+            --hidden-import tools_engine --hidden-import ocr_models --hidden-import latex_ocr --hidden-import action_dialogs --hidden-import signature_dialog --hidden-import docs_engine --hidden-import background_engine --hidden-import background_dialog \
             --collect-submodules openpyxl \
             --add-data "$PWD/assets:assets" --icon "$PWD/build_out/Morphix.icns" "$PWD/main.py"
           APP=build_out/dist/Morphix.app
@@ -74,6 +73,13 @@ jobs:
           xattr -cr "$APP"
           codesign --force --deep --sign - "$APP"
           codesign --verify --deep --strict "$APP"
+
+      - name: Smoke test the built app (every engine, add-on downloads)
+        run: python tools/smoke_build.py build_out/dist/Morphix.app/Contents/MacOS/Morphix --downloads
+
+      - name: Check the windows of the built app (English and Arabic)
+        run: |
+          build_out/dist/Morphix.app/Contents/MacOS/Morphix --morphix-ui-selftest "$RUNNER_TEMP/ui" || { python tools/annotate.py "$RUNNER_TEMP/ui/ui_selftest.txt" "UI self-test (macOS)"; exit 1; }
 
       - name: Create the DMG
         run: |
@@ -90,11 +96,3 @@ jobs:
           name: Morphix_macOS
           path: ${{ env.DMG }}
           retention-days: 30
-
-      - name: Attach to the release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          name: Morphix ${{ github.ref_name }}
-          body_path: .github/release-notes.md
-          files: ${{ env.DMG }}

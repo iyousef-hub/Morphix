@@ -45,10 +45,10 @@ from app_assets import logo_png
 from i18n import tr
 import i18n
 
-APP_VERSION = '1.8.0'
+APP_VERSION = '1.9.0'
 
 PDF = {'.pdf'}
-IMAGE = {'.jpg', '.jpeg', '.png', '.webp', '.bmp', '.tif', '.tiff'}
+IMAGE = {'.jpg', '.jpeg', '.png', '.webp', '.bmp', '.tif', '.tiff', '.heic', '.heif'}
 from file_intelligence import VIDEO, AUDIO  # one list for the whole app
 OFFICE = {'.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx', '.odt', '.odp', '.ods'}
 
@@ -84,6 +84,13 @@ ACTIONS = {
     'xlsx_split': 'Split sheets into separate Excel files',
     'xlsx_merge': 'Merge workbooks into one Excel file',
     'csv_xlsx': 'CSV → Excel',
+    'ppt_media': 'Make it PowerPoint-compatible (MP4 / M4A)',
+    'trim_media': 'Trim (keep from … to …)',
+    'heic_jpg': 'HEIC (iPhone) → JPG',
+    'pdf_word': 'PDF → Word (editable)',
+    'organize_pdf': 'Organize pages (reorder · rotate · delete)',
+    'sign_pdf': 'Sign the PDF',
+    'sign_images': 'Add a signature to the images',
 }
 
 def supported_actions(paths):
@@ -92,6 +99,29 @@ def supported_actions(paths):
         return []
     from file_intelligence import selection_profile
     profile = selection_profile(paths)
+    acts = _supported_base(paths, profile)
+    extra = []
+    if profile == 'pdf_single':
+        extra = ['organize_pdf', 'sign_pdf', 'pdf_word']
+    elif profile == 'pdf_multi':
+        extra = ['sign_pdf', 'pdf_word']
+    elif profile in ('image_single', 'image_multi'):
+        extra = ['sign_images']
+        if any(str(p).lower().endswith(('.heic', '.heif')) for p in paths):
+            extra = ['heic_jpg'] + extra
+    elif profile in ('video_single', 'audio_single'):
+        extra = ['ppt_media', 'trim_media']
+    elif profile in ('video_multi', 'audio_multi'):
+        extra = ['ppt_media']
+    if not acts:
+        return extra
+    # Archives stay at the end of the list.
+    tail = [a for a in acts if a in ('zip_files', 'tar_gz_files', 'rar_files')]
+    head = [a for a in acts if a not in tail]
+    return head + extra + tail
+
+
+def _supported_base(paths, profile):
     if profile == 'pdf_single':
         return ['pdf_png_zip', 'pdf_jpg_zip', 'extract_pdf_text', 'ocr_pdf_text', 'ocr_searchable_pdf', 'optimize_pdf',
                 'split_pdf', 'separate_pdf', 'visual_pdf', 'rotate_pdf', 'zip_files', 'rar_files',
@@ -379,6 +409,14 @@ class Window(QMainWindow):
             pixels, ok = QInputDialog.getInt(self, tr('Resize images'), tr('Longest side (pixels):'), 1920, 64, 16000)
             if not ok: return
             options['max_pixels'] = pixels
+        try:
+            from action_dialogs import ask_action_options
+            extra = ask_action_options(key, paths, parent=self)
+        except Exception as exc:
+            QMessageBox.warning(self, tr('Morphix'), str(exc))
+            return
+        if extra is None: return
+        options.update(extra)
         folder = QFileDialog.getExistingDirectory(self, tr('Where should the results be saved?'))
         if not folder: return
         self.progress.setValue(0)
@@ -532,6 +570,11 @@ def _single_instance_server(app):
 
 
 if __name__ == '__main__':
+    if '--morphix-ui-selftest' in sys.argv:
+        from ui_selftest import run as _ui_selftest
+        ix = sys.argv.index('--morphix-ui-selftest')
+        _code = _ui_selftest(sys.argv[ix + 1] if ix + 1 < len(sys.argv) else 'morphix_ui_selftest')
+        sys.exit(_code)
     if '--morphix-worker' in sys.argv:
         from worker_process import worker_main
         ix = sys.argv.index('--morphix-worker')

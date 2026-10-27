@@ -41,12 +41,12 @@ echo '▸ Building Morphix.app (this takes a few minutes)…'
   --distpath "$WORK/dist" --workpath "$WORK/build" --specpath "$WORK" --paths "$ROOT" \
   --name Morphix --osx-bundle-identifier com.iyousefhub.morphix \
   --collect-all imageio_ffmpeg --collect-all pymupdf \
-  --collect-all faster_whisper --collect-all ctranslate2 --collect-all onnxruntime \
+  --collect-all faster_whisper --collect-all ctranslate2 --collect-all onnxruntime --collect-all rapidocr --collect-all pillow_heif --collect-all pdf2docx --collect-all docx --collect-all bidi --hidden-import cv2 \
   --collect-submodules huggingface_hub --collect-submodules tokenizers \
   --collect-submodules AppKit --collect-submodules Foundation --collect-submodules objc \
   --hidden-import worker_process --hidden-import engine_core --hidden-import transcription_engine \
   --hidden-import hub_panel --hidden-import i18n_ar --hidden-import ui_kit --hidden-import theme \
-  --hidden-import docs_engine --hidden-import background_engine --hidden-import background_dialog \
+  --hidden-import tools_engine --hidden-import ocr_models --hidden-import latex_ocr --hidden-import action_dialogs --hidden-import signature_dialog --hidden-import docs_engine --hidden-import background_engine --hidden-import background_dialog \
   --collect-submodules openpyxl \
   --add-data "$ROOT/assets:assets" "${ICON_ARGS[@]}" "$ROOT/main.py"
 APP="$WORK/dist/Morphix.app"

@@ -96,6 +96,11 @@ if ! "$PY" -c 'from PySide6.QtWidgets import QApplication; import pymupdf; from 
   "$PY" -m pip install --upgrade pip >/dev/null 2>&1
   "$PY" -m pip install -r "$ROOT/requirements.txt" || fail "Installing components failed. Check your internet connection and try again."
 fi
+if ! "$PY" -c 'import pillow_heif, pdf2docx, rapidocr, bidi, tokenizers, onnxruntime' >/dev/null 2>&1; then
+  say "Installing the new tools (HEIC, PDF → Word, accurate OCR)…"
+  "$PY" -m pip install -r "$ROOT/requirements.txt" \
+    || say "Some new tools could not be installed; everything else still works."
+fi
 if ! "$PY" -c 'import faster_whisper' >/dev/null 2>&1; then
   say "Installing the offline Speech → Text engine…"
   "$PY" -m pip install -r "$ROOT/requirements-speech.txt" \

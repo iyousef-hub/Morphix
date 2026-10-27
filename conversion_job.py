@@ -10,6 +10,15 @@ from PySide6.QtCore import QObject, QProcess, Signal
 PREFIX = 'MORPHIX_EVENT='
 
 
+
+def _tr(text):
+    try:
+        from i18n import tr
+        return tr(text)
+    except Exception:
+        return text
+
+
 class ConversionJob(QObject):
     progress = Signal(int)
     status = Signal(str)
@@ -69,7 +78,7 @@ class ConversionJob(QObject):
                 if event.get('type') == 'progress':
                     self.progress.emit(int(event.get('value', 0)))
                 elif event.get('type') == 'status':
-                    self.status.emit(str(event.get('text', '')))
+                    self.status.emit(_tr(str(event.get('text', ''))))
                 elif event.get('type') == 'completed':
                     self._result = event.get('outputs', [])
                 elif event.get('type') == 'failed':

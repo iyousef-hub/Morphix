@@ -71,6 +71,40 @@ def execute(action, paths, out_dir, progress, options=None):
         outputs.append(out)
     def update(i, n):
         progress.emit(round(i / max(n, 1) * 100))
+    import tools_engine
+    tools_engine.register_heic()  # iPhone photos (HEIC) work in every image tool
+    status = getattr(progress, 'status', None)
+    if action == 'ppt_media':
+        return tools_engine.ppt_media(paths, out_dir, progress.emit,
+                                      max_height=options.get('ppt_height', '1080'),
+                                      audio_format=options.get('ppt_audio', 'm4a'))
+    if action == 'trim_media':
+        return tools_engine.trim_media(paths, out_dir, progress.emit, start=options.get('trim_start', '0'),
+                                       end=options.get('trim_end', ''), exact=bool(options.get('trim_exact', True)))
+    if action == 'heic_jpg':
+        return tools_engine.heic_to_jpg(paths, out_dir, progress.emit, quality=int(options.get('quality', 92)))
+    if action == 'pdf_word':
+        return tools_engine.pdf_to_word(paths, out_dir, progress.emit, status=status)
+    if action == 'organize_pdf':
+        return tools_engine.organize_pdf(paths[0], out_dir, options.get('pages') or [], progress.emit)
+    if action == 'sign_pdf':
+        return tools_engine.sign_pdf(paths, out_dir, progress.emit, signature=options['signature'],
+                                     box=options['box'], pages=options.get('pages', 'current'),
+                                     page_index=int(options.get('page_index', 0)))
+    if action == 'sign_images':
+        return tools_engine.sign_images(paths, out_dir, progress.emit, signature=options['signature'],
+                                        box=options['box'])
+    if action == 'download_ocr_model':
+        import ocr_models
+        return [ocr_models.download(options.get('kind', 'ocr_arabic'), progress.emit, status)]
+    engine = options.get('ocr_engine', 'standard')
+    if action in ('ocr_image_text', 'extract_pdf_text', 'ocr_pdf_text') and engine == 'accurate':
+        import ocr_models
+        return ocr_models.accurate_text(paths, out_dir, progress.emit, lang=options.get('ocr_lang', 'auto'),
+                                        status=status)
+    if action == 'ocr_image_text' and engine == 'formula':
+        import ocr_models
+        return ocr_models.formulas_to_latex(paths, out_dir, progress.emit, status=status)
     if action in ('zip_files', 'rar_files', 'tar_gz_files'):
         from core_ops import archive_files
         kind = {'rar_files':'rar', 'zip_files':'zip', 'tar_gz_files':'tar.gz'}[action]

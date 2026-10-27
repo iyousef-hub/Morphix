@@ -33,9 +33,9 @@ def test_context_offers_merge_for_pdf_plus_images_but_not_other_mixed(tmp_path):
     from ast import parse, FunctionDef, Module
     import ast
     tree=parse((Path(__file__).parents[1]/'main.py').read_text())
-    func=next(node for node in tree.body if isinstance(node,FunctionDef) and node.name=='supported_actions')
+    funcs=[node for node in tree.body if isinstance(node,FunctionDef) and node.name in ('supported_actions','_supported_base')]
     ns={'Path':Path}
-    exec(compile(Module(body=[func], type_ignores=[]), 'main_actions', 'exec'),ns)
+    exec(compile(Module(body=funcs, type_ignores=[]), 'main_actions', 'exec'),ns)
     pdf=tmp_path/'p.pdf';pdf.write_bytes(b'%PDF-1.4 hello')
     img=tmp_path/'q.png';Image.new('RGB',(2,2)).save(img)
     assert ns['supported_actions']([str(pdf),str(img)])==['merge_pdf','merge_optimize','zip_files','tar_gz_files','rar_files']

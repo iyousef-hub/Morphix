@@ -73,7 +73,7 @@ def test_wheel_actions_are_unified_and_reactive():
     assert 'self.current_paths + paths + self.sticky_added' not in source
     assert "'ocr_image_text': ('Extract text','text')" in source
     assert "'separate_pdf': ('Separate PDF','split')" in source
-    assert "'pdf_single': ('One PDF', ['ocr_searchable_pdf','extract_pdf_text','optimize_pdf'" in source
+    assert "'pdf_single': ('One PDF', ['ocr_searchable_pdf','organize_pdf','sign_pdf','optimize_pdf'" in source
 
 class Progress:
     def emit(self, value):

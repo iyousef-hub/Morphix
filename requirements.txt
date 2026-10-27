@@ -7,3 +7,10 @@ pyobjc-framework-Cocoa>=10; sys_platform == 'darwin'
 pywin32>=306; sys_platform == 'win32'
 openpyxl>=3.1,<4
 python-xlib>=0.33; sys_platform == 'linux'
+# 1.9: iPhone photos, PDF → Word, accurate OCR (PaddleOCR via ONNX) and formulas → LaTeX
+pillow-heif>=0.18,<2
+pdf2docx>=0.5.8,<0.6
+rapidocr>=3.4,<4
+python-bidi>=0.4,<1.0
+onnxruntime>=1.17,<2
+tokenizers>=0.15,<1

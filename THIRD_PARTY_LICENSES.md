@@ -18,3 +18,15 @@ Before distributing a signed Windows installer or macOS DMG, review all these li
 - **onnxruntime** (Microsoft) — MIT License.
 - **Whisper model weights** (OpenAI; CTranslate2 conversions by Systran / mobiuslabs) — MIT License.
   Models are downloaded by the user on first use and are not bundled by default.
+
+## Version 1.9 tools
+
+- **RapidOCR** (RapidAI) — Apache License 2.0. https://github.com/RapidAI/RapidOCR
+- **PaddleOCR PP-OCR models** (PaddlePaddle; ONNX conversions by RapidAI) — Apache License 2.0. The Arabic
+  recognition model is downloaded by the user from the Add-ons page.
+- **RapidLaTeXOCR** ONNX models (RapidAI) — Apache License 2.0; based on **pix2tex / LaTeX-OCR** (Lukas Blecher) —
+  MIT License. Downloaded by the user from the Add-ons page; `latex_ocr.py` is a compact re-implementation.
+- **pdf2docx** — MIT License (depends on python-docx — MIT, and OpenCV — Apache License 2.0).
+- **pillow-heif** — BSD-3-Clause; bundles libheif (LGPL-3.0) and codec libraries — review the shipped wheel.
+- **python-bidi** — LGPL-3.0 (used by RapidOCR for right-to-left text).
+- **tokenizers** (Hugging Face) — Apache License 2.0.

@@ -54,6 +54,40 @@ def catalogue():
             'available': lambda k=key: be.quality_allowed(k),
             'unavailable': 'This Mac does not have enough memory for this model (16 GB needed).',
         })
+    import ocr_models as om
+    items.append({
+        'id': 'ocr:standard', 'group': 'Text recognition (OCR)', 'title': 'Standard OCR (Tesseract)', 'size': 'Built in',
+        'desc': 'Pros: fast, light, makes searchable PDFs. Cons: weaker on photos, screenshots, small or mixed Arabic/English text.',
+        'installed': lambda: True, 'external': '', 'available': lambda: True,
+    })
+    items.append({
+        'id': 'ocr:latin', 'group': 'Text recognition (OCR)', 'title': 'Accurate OCR · English & Latin (PaddleOCR)',
+        'size': 'Built in',
+        'desc': 'Pros: much better on photos, screenshots and small text. Cons: slower than Standard; gives a text file, not a searchable PDF.',
+        'installed': lambda: om.accurate_available(), 'external': '', 'available': lambda: om.accurate_available(),
+        'unavailable': 'The accurate OCR engine is not installed. Run Launch_Morphix_Mac.command once while connected to the internet.',
+    })
+    items.append({
+        'id': 'ocr:arabic', 'group': 'Text recognition (OCR)', 'title': 'Accurate OCR · Arabic (PaddleOCR)',
+        'size': om.ARABIC_REC['size'],
+        'desc': 'Pros: reads Arabic photos and screenshots far better, keeps right-to-left line order, also reads English. '
+                'Cons: slower than Standard; may skip some numbers inside Arabic lines.',
+        'installed': lambda: om.arabic_model() is not None,
+        'action': 'download_ocr_model', 'options': {'kind': 'ocr_arabic'},
+        'remove': lambda: _remove(om.models_root() / om.ARABIC_REC['file']),
+        'available': lambda: om.accurate_available(),
+        'unavailable': 'The accurate OCR engine is not installed. Run Launch_Morphix_Mac.command once while connected to the internet.',
+    })
+    items.append({
+        'id': 'ocr:formula', 'group': 'Text recognition (OCR)', 'title': 'Math formulas → LaTeX', 'size': om.FORMULA['size'],
+        'desc': 'Pros: turns printed equations (fractions, integrals, matrices) into LaTeX you can paste into Word, Overleaf or Markdown. '
+                'Cons: one formula per image; handwriting and very long formulas are less accurate; large download.',
+        'installed': lambda: om.formula_dir() is not None,
+        'action': 'download_ocr_model', 'options': {'kind': 'ocr_formula'},
+        'remove': lambda: _remove(om.models_root() / 'formula'),
+        'available': lambda: om.accurate_available(),
+        'unavailable': 'The accurate OCR engine is not installed. Run Launch_Morphix_Mac.command once while connected to the internet.',
+    })
     from office_engine import find_office_engine
     items.append({
         'id': 'libreoffice', 'group': 'Office → PDF', 'title': 'LibreOffice', 'size': '≈ 350 MB',
@@ -88,7 +122,7 @@ class AddonRow(QFrame):
         title = QLabel(tr(item['title']))
         title.setObjectName('addonTitle')
         head.addWidget(title)
-        size = QLabel(item['size'])
+        size = QLabel(tr(item['size']))
         size.setObjectName('addonSize')
         head.addWidget(size)
         head.addStretch(1)

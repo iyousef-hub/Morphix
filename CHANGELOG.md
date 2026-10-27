@@ -1,3 +1,19 @@
+## v1.9.0 — Signatures, page organizer, PowerPoint media, trim, PDF → Word, accurate OCR
+
+- **Sign PDFs and images**: draw your signature (ink colour, thickness, undo), upload a photo of it (the paper
+  background is removed automatically; optional AI clean-up), or reuse a saved one. Drag it on a live preview of the
+  page, resize it from the corner or snap it to a corner, and choose this page, all pages, first, last or a range.
+  With several images selected, the same position is applied to all of them in one click.
+- **Organize PDF pages**: thumbnails you can drag to reorder, rotate left/right, delete, reverse — saved as a new PDF.
+- **Make it PowerPoint-compatible**: any video → MP4 (H.264 + AAC, 1080p/720p/original), any audio → M4A or MP3.
+- **Trim video / audio** from a start time to an end time, with frame previews. Exact mode (re-encode) or fast mode
+  (no re-encoding, cuts at keyframes).
+- **HEIC (iPhone) → JPG**, keeping colours and photo data. HEIC photos also work in every other image tool.
+- **PDF → Word** (editable .docx, keeps tables and pictures; Arabic paragraphs are set right-to-left).
+- **More accurate OCR** (PaddleOCR via ONNX Runtime) for photos and screenshots — English built in, Arabic as an
+  ≈ 8 MB add-on — and **math formulas → LaTeX** (≈ 170 MB add-on). Each engine shows its pros and cons when you
+  extract text and in Add-ons.
+
 ## v1.8.0 — Linux
 
 - **New: Linux version** as a single AppImage (Ubuntu 22.04+, Debian 12+, Fedora, Mint…), built and
