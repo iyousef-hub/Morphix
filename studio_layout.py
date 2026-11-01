@@ -45,6 +45,28 @@ def action_button(key, text):
     return btn
 
 
+def _compact_when_narrow(area, row, buttons, more):
+    """On a narrow window the scanner / phone / QR buttons fold into one menu button."""
+    from PySide6.QtCore import QObject, QEvent
+
+    class Fit(QObject):
+        def eventFilter(self, obj, event):
+            if event.type() == QEvent.Resize:
+                full = sum(b.sizeHint().width() + row.spacing() for b in buttons)
+                others = sum(row.itemAt(i).widget().sizeHint().width() + row.spacing()
+                             for i in range(row.count())
+                             if row.itemAt(i).widget() is not None and row.itemAt(i).widget() not in buttons
+                             and row.itemAt(i).widget() is not more)
+                compact = others + full + 80 > obj.width()
+                for b in buttons:
+                    b.setVisible(not compact)
+                more.setVisible(compact)
+            return False
+
+    area._fit_tools = Fit(area)
+    area.installEventFilter(area._fit_tools)
+
+
 def build_studio_ui(w):
     root = QWidget()
     root.setObjectName('studioRoot')
@@ -57,7 +79,23 @@ def build_studio_ui(w):
     sidebar = QFrame()
     sidebar.setObjectName('studioSidebar')
     sidebar.setFixedWidth(238)
-    nav = QVBoxLayout(sidebar)
+    # On short screens the sidebar scrolls instead of squeezing its items together.
+    from PySide6.QtWidgets import QScrollArea
+    outer = QVBoxLayout(sidebar)
+    outer.setContentsMargins(0, 0, 0, 0)
+    scroll = QScrollArea()
+    scroll.setWidgetResizable(True)
+    scroll.setFrameShape(QFrame.NoFrame)
+    scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+    scroll.setStyleSheet('QScrollArea, QScrollArea > QWidget > QWidget { background: transparent; }'
+                         'QScrollBar:vertical { width: 6px; background: transparent; }'
+                         'QScrollBar::handle:vertical { background: #2A4A72; border-radius: 3px; min-height: 30px; }'
+                         'QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }')
+    inner = QWidget()
+    inner.setObjectName('studioSidebarInner')
+    scroll.setWidget(inner)
+    outer.addWidget(scroll)
+    nav = QVBoxLayout(inner)
     nav.setContentsMargins(18, 24, 16, 18)
     nav.setSpacing(6)
 
@@ -169,7 +207,35 @@ def build_studio_ui(w):
         b.clicked.connect(callback)
         tools.addWidget(b)
     tools.addStretch()
+    # 1.10 tools that start without files: scanner, phone transfer, QR codes
+    extra_tools = []
+    for text, tip, callback in (('⬚  ' + tr('Scan'), tr('Scan documents'), w.open_scanner),
+                                ('⇄  ' + tr('From my phone'), tr('Send photos, videos and files from your phone'), w.open_phone),
+                                ('▩  ' + tr('QR code'), tr('QR code'), w.open_qr)):
+        b = QPushButton(text)
+        b.setObjectName('toolButton')
+        b.setToolTip(tip)
+        b.setCursor(Qt.PointingHandCursor)
+        b.clicked.connect(callback)
+        b.setProperty('full', text)
+        b.setProperty('glyph', text.split('  ')[0])
+        tools.addWidget(b)
+        extra_tools.append(b)
+    from PySide6.QtWidgets import QToolButton, QMenu
+    more = QToolButton()
+    more.setObjectName('toolButton')
+    more.setText('⬚  ▾')
+    more.setToolTip(tr('Scan documents') + ' · ' + tr('From my phone') + ' · ' + tr('QR code'))
+    more.setPopupMode(QToolButton.InstantPopup)
+    more.setCursor(Qt.PointingHandCursor)
+    menu = QMenu(more)
+    for b in extra_tools:
+        menu.addAction(b.text(), b.click)
+    more.setMenu(menu)
+    more.hide()
+    tools.addWidget(more)
     content.addLayout(tools)
+    _compact_when_narrow(body, tools, extra_tools, more)
 
     split = QSplitter(Qt.Horizontal)
     split.setChildrenCollapsible(False)
@@ -308,6 +374,10 @@ QLabel#fileCount { background:#1C3858; border-radius:10px; color:#B6D8FC; paddin
 QPushButton { color:#D8E8FC; background:#18304D; border:1px solid #2B4D73; border-radius:10px;
               padding:10px 14px; font-size:12px; font-weight:600; }
 QPushButton:hover { background:#22476C; border-color:#6FB0FA; }
+QToolButton#toolButton { color:#D8E8FC; background:#18304D; border:1px solid #2B4D73; border-radius:10px;
+              padding:10px 14px; font-size:12px; font-weight:600; }
+QToolButton#toolButton:hover { background:#22476C; border-color:#6FB0FA; }
+QToolButton#toolButton::menu-indicator { image:none; width:0; }
 QPushButton:disabled { color:#5D7493; border-color:#1F3753; }
 QPushButton#primaryButton { background:#247FE4; color:#FFFFFF; border:1px solid #4F9FF9; font-weight:700; }
 QPushButton#primaryButton:hover { background:#3A95F5; }

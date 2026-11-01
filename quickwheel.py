@@ -27,8 +27,8 @@ PROFILES = {
     'pdf_single': ('One PDF', ['ocr_searchable_pdf','organize_pdf','sign_pdf','optimize_pdf','pdf_word','extract_pdf_text','pdf_png_zip','split_pdf','visual_pdf']),
     'pdf_image_mix': ('PDF + Images', ['merge_pdf','merge_optimize','zip_files','tar_gz_files','rar_files']),
     'pdf_multi': ('Multiple PDFs', ['merge_pdf','merge_optimize','sign_pdf','ocr_searchable_pdf','optimize_pdf','extract_pdf_text','pdf_png_zip','zip_files']),
-    'image_single': ('One image', ['heic_jpg','remove_bg','images_pdf','ocr_image_text','sign_images','visual_image','image_compress','image_jpg','more_actions']),
-    'image_multi': ('Multiple images', ['heic_jpg','images_pdf','remove_bg','sign_images','ocr_image_text','image_jpg','image_compress','zip_files']),
+    'image_single': ('One image', ['scan_document','heic_jpg','remove_bg','images_pdf','ocr_image_text','sign_images','visual_image','image_compress','image_jpg','more_actions']),
+    'image_multi': ('Multiple images', ['scan_document','heic_jpg','images_pdf','remove_bg','sign_images','ocr_image_text','image_jpg','image_compress','zip_files']),
     'video_single': ('One video', ['ppt_media','trim_media','transcribe_media','video_mp3','video_mp4','zip_files']),
     'video_multi': ('Multiple videos', ['ppt_media','transcribe_media','join_video','video_mp3','video_mp4','zip_files']),
     'audio_single': ('One audio', ['ppt_media','trim_media','transcribe_media','audio_mp3','zip_files']),
@@ -64,6 +64,7 @@ WHEEL_LABELS = {
     'ppt_media': ('PowerPoint-ready','slides'), 'trim_media': ('Trim','trim'),
     'heic_jpg': ('HEIC → JPG','image'), 'pdf_word': ('To Word','word'),
     'organize_pdf': ('Organize pages','pages'), 'sign_pdf': ('Sign','sign'), 'sign_images': ('Signature','sign'),
+    'scan_document': ('Scan document','scan'), 'read_qr': ('Read QR code','qr'),
     'more_actions': ('More tools','more'), 'studio': ('Open Studio','more'),
 }
 
@@ -310,6 +311,19 @@ def _draw_action_icon(p, x, y, kind, color):
     elif kind == 'sign':
         path = QPainterPath(QPointF(-12, 4)); path.cubicTo(-8, -10, -4, 10, 0, -2); path.cubicTo(3, -9, 6, 8, 12, -1)
         p.drawPath(path); p.drawLine(-12, 11, 12, 11)
+    elif kind == 'scan':
+        for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1)):
+            p.drawLine(QPointF(sx * 12, sy * 12), QPointF(sx * 12, sy * 5))
+            p.drawLine(QPointF(sx * 12, sy * 12), QPointF(sx * 5, sy * 12))
+        p.drawLine(-8, 0, 8, 0)
+        p.drawRoundedRect(QRectF(-6, -8, 12, 16), 1.5, 1.5)
+    elif kind == 'qr':
+        for gx, gy in ((-12, -12), (3, -12), (-12, 3)):
+            p.drawRoundedRect(QRectF(gx, gy, 9, 9), 1.5, 1.5)
+        p.setBrush(color)
+        for dx, dy in ((4, 4), (9, 4), (4, 9), (9, 9), (7, 7)):
+            p.drawRect(QRectF(dx - 1, dy - 1, 2.6, 2.6))
+        p.setBrush(Qt.NoBrush)
     elif kind == 'audio':
         p.drawLine(2,-11,2,7);p.drawLine(2,-11,10,-13)
         p.drawEllipse(QRectF(-6,4,9,7));p.drawEllipse(QRectF(4,2,9,7))
@@ -888,6 +902,10 @@ class QuickWheelController(QObject):
         menu.addAction(tr('Simple actions menu · Choose files…'), lambda: self._after_tray_menu(self.test_safe_menu))
         menu.addSeparator()
         menu.addAction(tr('Open Morphix Studio'), lambda: self._after_tray_menu(self.open_studio))
+        menu.addAction(tr('Scan documents…'), lambda: self._after_tray_menu(self.open_scanner))
+        menu.addAction(tr('From my phone…'), lambda: self._after_tray_menu(self.open_phone))
+        menu.addAction(tr('QR code…'), lambda: self._after_tray_menu(self.open_qr))
+        menu.addSeparator()
         menu.addAction(tr('Settings…'), lambda: self._after_tray_menu(self.open_preferences))
         menu.addAction(tr('Add-ons…'), lambda: self._after_tray_menu(lambda: self.open_preferences(page=4)))
         menu.addAction(tr('Hide the Action Hub'), self.hide_wheel)
@@ -1309,7 +1327,7 @@ class QuickWheelController(QObject):
         for new_key, flag in (('transcribe_media', 'wheel_v15_transcribe/'), ('ocr_searchable_pdf', 'wheel_v16_ocr/'),
                               ('organize_pdf', 'wheel_v19_organize/'), ('sign_pdf', 'wheel_v19_sign/'),
                               ('sign_images', 'wheel_v19_sign/'), ('ppt_media', 'wheel_v19_ppt/'),
-                              ('heic_jpg', 'wheel_v19_heic/')):
+                              ('heic_jpg', 'wheel_v19_heic/'), ('scan_document', 'wheel_v110_scan/')):
             if (isinstance(config, list) and new_key in allowed and new_key not in candidates
                     and not self.settings.value(flag + profile, False, type=bool)):
                 candidates = [new_key] + list(candidates)[:7]
@@ -1423,6 +1441,40 @@ class QuickWheelController(QObject):
             self.live_selection.stop()
         self.notify('Morphix', tr('Selection cleared. Choose new files to continue.'))
 
+    def _front(self, dialog):
+        dialog.setWindowFlag(Qt.WindowStaysOnTopHint, True)
+        dialog.show(); dialog.raise_(); dialog.activateWindow()
+
+    def open_scanner(self, paths=None):
+        if self.thread is not None:
+            self.notify(tr('Morphix is busy'), tr('Wait for the current task to finish, or cancel it from the M menu.'))
+            return
+        from scan_dialog import ScanDialog
+        self._dismiss_hub()
+        dialog = ScanDialog(paths or [])
+        self._front(dialog)
+        if dialog.exec() and dialog.pages:
+            options = dialog.options()
+            self.start_job('scan_document', [p['path'] for p in options['scan_pages']], options)
+
+    def open_phone(self):
+        from phone_transfer import PhoneDialog
+        self._dismiss_hub()
+        dialog = PhoneDialog(purpose='files')
+        self._front(dialog)
+        if dialog.exec():
+            received = dialog.received_paths()
+            if received:
+                # The phone's files stay in the hub (like "Add more files…") until cleared.
+                self.show_wheel(paths_override=received)
+                self.sticky_added = list(received)
+
+    def open_qr(self):
+        from qr_dialog import QrDialog
+        dialog = QrDialog()
+        self._front(dialog)
+        dialog.exec()
+
     def action_selected(self, action):
         if isinstance(action, tuple) and action[0] == 'add_paths':
             additions = [p for p in action[1] if Path(p).is_file()]
@@ -1434,6 +1486,7 @@ class QuickWheelController(QObject):
             menu.addAction(tr('Add more files…'), self.add_more_files)
             menu.addAction(tr('Refresh Finder selection'), self.refresh_selection_now)
             menu.addAction(tr('Clear selection'), self.clear_selection)
+            menu.addAction(tr('From my phone…'), self.open_phone)
             menu.addSeparator()
             menu.addAction(tr('Settings…'), self.open_preferences)
             menu.addAction(tr('Open Morphix Studio'), self.open_studio)
@@ -1549,6 +1602,12 @@ class QuickWheelController(QObject):
         if extra is None:
             return
         options.update(extra)
+        self.start_job(action, paths, options)
+
+    def start_job(self, action, paths, options):
+        from main import ACTIONS
+        if action == 'scan_document' and options.get('scan_pages'):
+            paths = [page['path'] for page in options['scan_pages']]
         parents = {str(Path(p).parent) for p in paths}
         folder = next(iter(parents)) if len(parents) == 1 else str(Path.home() / 'Documents' / 'Morphix Output')
         Path(folder).mkdir(parents=True, exist_ok=True)

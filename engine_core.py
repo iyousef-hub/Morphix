@@ -94,6 +94,17 @@ def execute(action, paths, out_dir, progress, options=None):
     if action == 'sign_images':
         return tools_engine.sign_images(paths, out_dir, progress.emit, signature=options['signature'],
                                         box=options['box'])
+    if action == 'scan_document':
+        import scan_engine
+        return scan_engine.build_scan(options.get('scan_pages') or [], out_dir, progress.emit,
+                                      name=options.get('scan_name', 'Scan'),
+                                      page_size=options.get('page_size', 'a4'),
+                                      quality=options.get('scan_quality', 'balanced'),
+                                      ocr=bool(options.get('scan_ocr')), id_card=bool(options.get('id_card')),
+                                      output=options.get('scan_output', 'pdf'), status=status)
+    if action == 'read_qr':
+        import scan_engine
+        return scan_engine.read_qr_codes(paths, out_dir, progress.emit)
     if action == 'download_ocr_model':
         import ocr_models
         return [ocr_models.download(options.get('kind', 'ocr_arabic'), progress.emit, status)]

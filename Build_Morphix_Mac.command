@@ -46,7 +46,7 @@ echo '▸ Building Morphix.app (this takes a few minutes)…'
   --collect-submodules AppKit --collect-submodules Foundation --collect-submodules objc \
   --hidden-import worker_process --hidden-import engine_core --hidden-import transcription_engine \
   --hidden-import hub_panel --hidden-import i18n_ar --hidden-import ui_kit --hidden-import theme \
-  --hidden-import tools_engine --hidden-import ocr_models --hidden-import latex_ocr --hidden-import action_dialogs --hidden-import signature_dialog --hidden-import docs_engine --hidden-import background_engine --hidden-import background_dialog \
+  --hidden-import tools_engine --hidden-import ocr_models --hidden-import latex_ocr --hidden-import action_dialogs --hidden-import signature_dialog --hidden-import scan_engine --hidden-import scan_dialog --hidden-import phone_transfer --hidden-import qr_maker --hidden-import qr_dialog --hidden-import segno --hidden-import zxingcpp --hidden-import PySide6.QtNetwork --hidden-import docs_engine --hidden-import background_engine --hidden-import background_dialog \
   --collect-submodules openpyxl \
   --add-data "$ROOT/assets:assets" "${ICON_ARGS[@]}" "$ROOT/main.py"
 APP="$WORK/dist/Morphix.app"
@@ -57,6 +57,7 @@ APP="$WORK/dist/Morphix.app"
 PLIST="$APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c 'Add :LSUIElement bool true' "$PLIST" 2>/dev/null || true
 /usr/libexec/PlistBuddy -c 'Add :NSAppleEventsUsageDescription string Morphix reads the files you select in Finder so it can show the right tools.' "$PLIST" 2>/dev/null || true
+/usr/libexec/PlistBuddy -c 'Add :NSLocalNetworkUsageDescription string Morphix receives the photos and files you send from your phone over your Wi-Fi.' "$PLIST" 2>/dev/null || true
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $(cat VERSION)" "$PLIST" 2>/dev/null || true
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $(cat VERSION)" "$PLIST" 2>/dev/null || true
 

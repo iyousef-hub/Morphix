@@ -45,6 +45,11 @@ def samples(w: Path):
     sig = Image.new('RGBA', (200, 80), (0, 0, 0, 0))
     ImageDraw.Draw(sig).line([(10, 60), (60, 10), (110, 60), (190, 20)], fill=(20, 40, 160, 255), width=6)
     sig.save(w / 'sig.png')
+    try:  # a QR code to read back (built with the same libraries the app ships)
+        import segno
+        segno.make('Morphix smoke QR', error='m').save(str(w / 'qr.png'), scale=8, border=4)
+    except Exception as exc:  # pragma: no cover
+        print('QR sample unavailable:', exc)
     try:
         import pillow_heif
         pillow_heif.register_heif_opener()
@@ -81,6 +86,12 @@ def main():
         ('sign_images', [s('photo.jpg'), s('text.png')], {'signature': s('sig.png'), 'box': [0.5, 0.5, 0.3]}),
         ('ocr_image_text', [s('text.png')], {'ocr_engine': 'accurate', 'ocr_lang': 'latin'}),
         ('extract_pdf_text', [s('a.pdf')], {'ocr_engine': 'accurate', 'ocr_lang': 'latin'}),
+        ('scan_document', [s('text.png'), s('photo.jpg')], {
+            'scan_pages': [{'path': s('text.png'), 'corners': [[0, 0], [1, 0], [1, 1], [0, 1]], 'filter': 'bw'},
+                           {'path': s('photo.jpg'), 'corners': [[0.1, 0.1], [0.9, 0.12], [0.88, 0.9], [0.12, 0.88]],
+                            'rotation': 90, 'filter': 'enhanced'}],
+            'scan_name': 'Smoke scan', 'scan_ocr': True}),
+        ('read_qr', [s('qr.png')], {}),
     ]
     if has_heic:
         jobs.append(('heic_jpg', [s('p.heic')], {'quality': 90}))

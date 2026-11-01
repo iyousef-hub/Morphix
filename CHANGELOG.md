@@ -1,3 +1,23 @@
+## v1.10.0 — Document scanner, phone → computer over Wi-Fi, QR codes
+
+- **Scan documents**: photos of paper become clean, straight pages. Morphix finds the sheet's four corners, undoes
+  the camera's perspective (true page proportions, snapped to A4 / Letter / ID-card size), trims table edges and
+  removes shadows. Drag a corner to fix it, with a magnifier for precise placement. Looks: Enhanced, Original colours,
+  Grayscale, Black & white (1-bit, smallest file). Pages can be reordered, rotated and removed. Saves one PDF (A4,
+  Letter or the photo's shape; High / Balanced / Small quality) with searchable Arabic + English text, or one picture
+  per page. **ID card** layout puts front and back on one sheet at the real card size.
+- **From my phone**: scan a QR code with the phone's camera; a small page opens in the phone's browser to take
+  photos or send photos, videos and any documents, which arrive on the computer over the same Wi-Fi — no internet,
+  no app. Full quality (byte-for-byte), original file dates, 8 MB resumable pieces for big videos (up to 64 GB),
+  two files at a time, free-space check, screen kept awake on the phone. On iPhone the page explains how to keep
+  originals (picker → Options/⚙︎ → Format → Current). The page exists only while the window is open, its address
+  carries a random key, names are made safe and nothing is overwritten. Received files open in the Action Hub
+  (or Studio), or go straight into the scanner.
+- **QR codes**: links (Google Drive, OneDrive, websites…), text, Wi-Fi networks and contact cards. Rounded, dots or
+  classic squares, your colours, transparent background, a logo in the middle and a caption. Each code is read back
+  before you save it (PNG, SVG or PDF) or copy it. Cloud links get a reminder to share them with "Anyone with the link".
+- **Read QR codes and barcodes** in pictures.
+
 ## v1.9.0 — Signatures, page organizer, PowerPoint media, trim, PDF → Word, accurate OCR
 
 - **Sign PDFs and images**: draw your signature (ink colour, thickness, undo), upload a photo of it (the paper

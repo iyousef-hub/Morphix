@@ -77,7 +77,7 @@ if exist "%WORK%\dist" rmdir /s /q "%WORK%\dist"
   --hidden-import win32com.client --hidden-import pythoncom --hidden-import pywintypes ^
   --hidden-import worker_process --hidden-import engine_core --hidden-import transcription_engine ^
   --hidden-import hub_panel --hidden-import i18n_ar --hidden-import ui_kit --hidden-import win_compat ^
-  --hidden-import tools_engine --hidden-import ocr_models --hidden-import latex_ocr --hidden-import action_dialogs --hidden-import signature_dialog --hidden-import docs_engine --hidden-import background_engine --hidden-import background_dialog ^
+  --hidden-import tools_engine --hidden-import ocr_models --hidden-import latex_ocr --hidden-import action_dialogs --hidden-import signature_dialog --hidden-import scan_engine --hidden-import scan_dialog --hidden-import phone_transfer --hidden-import qr_maker --hidden-import qr_dialog --hidden-import segno --hidden-import zxingcpp --hidden-import PySide6.QtNetwork --hidden-import docs_engine --hidden-import background_engine --hidden-import background_dialog ^
   --hidden-import windows_hotkeys --hidden-import theme --hidden-import ms_office ^
   --hidden-import win32gui --hidden-import win32com.shell.shell ^
   --add-data "%ROOT%\assets;assets" "%ROOT%\main.py" >> "%LOG%" 2>&1 || goto :error

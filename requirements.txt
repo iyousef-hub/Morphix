@@ -14,3 +14,6 @@ rapidocr>=3.4,<4
 python-bidi>=0.4,<1.0
 onnxruntime>=1.17,<2
 tokenizers>=0.15,<1
+# 1.10: document scanner (OpenCV comes with pdf2docx), QR codes, phone transfer
+segno>=1.6,<2
+zxing-cpp>=2.2,<4

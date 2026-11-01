@@ -100,6 +100,38 @@ def run(folder):
         check(f'{lang} sign pdf', lambda: sign('pdf', [str(pdf)]))
         check(f'{lang} sign images', lambda: sign('image', [str(png), str(png)]))
 
+        def scanner():
+            from scan_dialog import ScanDialog
+            d = track(ScanDialog([str(png), str(png)]))
+            d.show()
+            while d._pending:
+                d._detect_next()
+            app.processEvents()
+            out = d.options()
+            assert len(out['scan_pages']) == 2, out
+            d.reject()
+            return f"{len(out['scan_pages'])} pages"
+        check(f'{lang} scanner', scanner)
+
+        def qr_window():
+            from qr_dialog import QrDialog
+            d = track(QrDialog(text='https://github.com/iyousef-hub/Morphix'))
+            d.show(); d._update(); app.processEvents()
+            assert d.check.text().startswith('✓'), d.check.text()
+            d.reject()
+            return 'scans back'
+        check(f'{lang} qr', qr_window)
+
+        def phone():
+            from phone_transfer import PhoneDialog
+            d = track(PhoneDialog(purpose='scan', folder=folder / 'phone'))
+            d.show(); app.processEvents()
+            port = d.server.port
+            d.reject()
+            assert port and d.server.httpd is None
+            return f'port {port}'
+        check(f'{lang} phone', phone)
+
         def addons():
             from addons import AddonsDialog
             d = track(AddonsDialog())
@@ -112,7 +144,8 @@ def run(folder):
             from PySide6.QtGui import QPixmap, QPainter, QColor
             pix = QPixmap(64, 64)
             painter = QPainter(pix)
-            for key in ('ppt_media', 'trim_media', 'heic_jpg', 'pdf_word', 'organize_pdf', 'sign_pdf', 'sign_images'):
+            for key in ('ppt_media', 'trim_media', 'heic_jpg', 'pdf_word', 'organize_pdf', 'sign_pdf', 'sign_images',
+                        'scan_document', 'read_qr'):
                 label, kind = quickwheel.WHEEL_LABELS[key]
                 quickwheel._draw_action_icon(painter, 32, 32, kind, QColor('#FFFFFF'))
             painter.end()

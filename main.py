@@ -45,7 +45,7 @@ from app_assets import logo_png
 from i18n import tr
 import i18n
 
-APP_VERSION = '1.9.0'
+APP_VERSION = '1.10.0'
 
 PDF = {'.pdf'}
 IMAGE = {'.jpg', '.jpeg', '.png', '.webp', '.bmp', '.tif', '.tiff', '.heic', '.heif'}
@@ -91,6 +91,8 @@ ACTIONS = {
     'organize_pdf': 'Organize pages (reorder · rotate · delete)',
     'sign_pdf': 'Sign the PDF',
     'sign_images': 'Add a signature to the images',
+    'scan_document': 'Scan as a document (straighten · clean · PDF)',
+    'read_qr': 'Read QR code / barcode',
 }
 
 def supported_actions(paths):
@@ -106,9 +108,10 @@ def supported_actions(paths):
     elif profile == 'pdf_multi':
         extra = ['sign_pdf', 'pdf_word']
     elif profile in ('image_single', 'image_multi'):
-        extra = ['sign_images']
+        extra = ['sign_images', 'read_qr']
         if any(str(p).lower().endswith(('.heic', '.heif')) for p in paths):
             extra = ['heic_jpg'] + extra
+        extra = ['scan_document'] + extra
     elif profile in ('video_single', 'audio_single'):
         extra = ['ppt_media', 'trim_media']
     elif profile in ('video_multi', 'audio_multi'):
@@ -268,6 +271,32 @@ class Window(QMainWindow):
         if getattr(self, 'controller', None):
             self.controller.open_quick_wheel()
 
+    def open_scanner(self):
+        if self.thread is not None:
+            return
+        from scan_dialog import ScanDialog
+        dialog = ScanDialog(self.selected_paths_of_images(), self)
+        if dialog.exec() and dialog.pages:
+            options = dialog.options()
+            self.launch('scan_document', [p['path'] for p in options['scan_pages']], options)
+
+    def selected_paths_of_images(self):
+        from scan_dialog import IMAGE_EXT
+        chosen = self.files.selectedItems()
+        return [i.data(Qt.UserRole) for i in chosen if str(i.data(Qt.UserRole)).lower().endswith(IMAGE_EXT)]
+
+    def open_phone(self):
+        from phone_transfer import PhoneDialog
+        dialog = PhoneDialog(self, purpose='files')
+        if dialog.exec():
+            received = dialog.received_paths()
+            if received:
+                self.focus_files(received)
+
+    def open_qr(self):
+        from qr_dialog import QrDialog
+        QrDialog(self).exec()
+
     def open_addons(self):
         from addons import AddonsDialog
         AddonsDialog(self).exec()
@@ -417,7 +446,13 @@ class Window(QMainWindow):
             return
         if extra is None: return
         options.update(extra)
-        folder = QFileDialog.getExistingDirectory(self, tr('Where should the results be saved?'))
+        self.launch(key, paths, options)
+
+    def launch(self, key, paths, options):
+        if key == 'scan_document' and options.get('scan_pages'):
+            paths = [page['path'] for page in options['scan_pages']]
+        folder = QFileDialog.getExistingDirectory(self, tr('Where should the results be saved?'),
+                                                  str(Path(paths[0]).parent) if paths else '')
         if not folder: return
         self.progress.setValue(0)
         self.status.setPlainText(tr('Working on: {task}…', task=tr(ACTIONS[key])))
