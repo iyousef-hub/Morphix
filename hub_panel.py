@@ -154,7 +154,7 @@ class PanelContent(QWidget):
             header.addWidget(title, 1)
         self.tool_buttons = []
         for glyph, tip, action in (('+', 'Add more files…', 'add_more'),
-                                   ('⋯', 'More tools', 'more_actions'),
+                                   ('⋯', 'All tools', 'more_actions'),
                                    ('×', 'Hide', 'hide_hub')):
             btn = QToolButton()
             btn.setText(glyph)
@@ -178,12 +178,7 @@ class PanelContent(QWidget):
             grid.addWidget(empty, 0, 0)
         else:
             n = len(self.actions)
-            if bar:
-                cols = 1 if self.vertical else n
-            elif self.shape == 'rectangle':
-                cols = 4 if n > 3 else n
-            else:
-                cols = 3 if n > 4 else (2 if n > 1 else 1)
+            cols = grid_columns(self.shape, n, self.vertical)
             for i, key in enumerate(self.actions):
                 tile = HubTile(key, compact, self.accent)
                 tile.setFixedSize(tile_w, tile_h)
@@ -246,6 +241,21 @@ class PanelContent(QWidget):
         p.setPen(QPen(border, 1.3))
         p.drawRoundedRect(r, radius, radius)
         p.end()
+
+
+def grid_columns(shape, n, vertical=False):
+    """Columns for n tiles. Grids grow when “show all tools” puts more than the usual number in."""
+    if shape == 'bar':
+        if vertical:
+            return 1 if n <= 9 else 2
+        return n if n <= 9 else math.ceil(n / 2)
+    if shape == 'rectangle':
+        if n <= 8:
+            return 4 if n > 3 else max(1, n)
+        return math.ceil(n / (2 if n <= 12 else 3))
+    if n <= 9:
+        return 3 if n > 4 else (2 if n > 1 else 1)
+    return max(3, math.ceil(math.sqrt(n)))
 
 
 def QBoxLayoutFor(vertical):
@@ -350,7 +360,8 @@ class PanelWindow(QWidget):
 
     def set_context(self, paths, profile, actions):
         self.paths, self.profile = list(paths), profile
-        self.actions = list(actions)[:self.MAX_ACTIONS]
+        limit = 24 if getattr(self, 'show_all', False) else self.MAX_ACTIONS
+        self.actions = list(actions)[:limit]
         self.content.set_context(self.paths, self.actions, self.persistent)
         was_visible = self.isVisible()
         old_center = self.geometry().center()

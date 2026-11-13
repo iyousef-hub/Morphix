@@ -478,6 +478,9 @@ def ask_action_options(key, paths, parent=None):
         dialog = SignatureDialog(paths, 'pdf' if key == 'sign_pdf' else 'image', parent)
     elif key in ('ocr_image_text', 'extract_pdf_text', 'ocr_pdf_text'):
         dialog = OcrChoiceDialog(paths, key, parent)
+    elif key == 'compress_media':
+        from media_compress_dialog import MediaCompressDialog
+        dialog = MediaCompressDialog(paths, parent)
     elif key == 'scan_document':
         from scan_dialog import ScanDialog
         dialog = ScanDialog(paths, parent)

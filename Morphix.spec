@@ -6,7 +6,7 @@ datas = [('assets', 'assets')]
 binaries = []
 hiddenimports = ['worker_process', 'engine_core', 'transcription_engine', 'hub_panel', 'i18n_ar', 'ui_kit', 'docs_engine', 'background_engine', 'background_dialog',
                  'tools_engine', 'ocr_models', 'latex_ocr', 'action_dialogs', 'signature_dialog', 'cv2',
-                 'scan_engine', 'scan_dialog', 'phone_transfer', 'qr_maker', 'qr_dialog', 'segno', 'zxingcpp', 'PySide6.QtNetwork']
+                 'scan_engine', 'scan_dialog', 'phone_transfer', 'qr_maker', 'qr_dialog', 'media_compress', 'media_compress_dialog', 'tools_library', 'segno', 'zxingcpp', 'PySide6.QtNetwork']
 hiddenimports += collect_submodules('huggingface_hub')
 hiddenimports += collect_submodules('tokenizers')
 hiddenimports += collect_submodules('AppKit')

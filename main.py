@@ -45,7 +45,7 @@ from app_assets import logo_png
 from i18n import tr
 import i18n
 
-APP_VERSION = '1.10.0'
+APP_VERSION = '1.11.0'
 
 PDF = {'.pdf'}
 IMAGE = {'.jpg', '.jpeg', '.png', '.webp', '.bmp', '.tif', '.tiff', '.heic', '.heif'}
@@ -93,6 +93,7 @@ ACTIONS = {
     'sign_images': 'Add a signature to the images',
     'scan_document': 'Scan as a document (straighten · clean · PDF)',
     'read_qr': 'Read QR code / barcode',
+    'compress_media': 'Compress (recommended · strength · target size like 25 MB)',
 }
 
 def supported_actions(paths):
@@ -113,9 +114,9 @@ def supported_actions(paths):
             extra = ['heic_jpg'] + extra
         extra = ['scan_document'] + extra
     elif profile in ('video_single', 'audio_single'):
-        extra = ['ppt_media', 'trim_media']
+        extra = ['compress_media', 'ppt_media', 'trim_media']
     elif profile in ('video_multi', 'audio_multi'):
-        extra = ['ppt_media']
+        extra = ['compress_media', 'ppt_media']
     if not acts:
         return extra
     # Archives stay at the end of the list.

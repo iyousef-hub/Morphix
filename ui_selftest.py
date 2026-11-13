@@ -139,13 +139,40 @@ def run(folder):
             return 'ok'
         check(f'{lang} add-ons', addons)
 
+        def library():
+            from tools_library import ToolsLibrary
+            d = track(ToolsLibrary([str(pdf)], 'pdf_single'))
+            d.show(); app.processEvents()
+            n = len(d.cards)
+            d.search.setText('word'); app.processEvents()
+            assert any(c.isVisible() for c in d.cards)
+            d.reject()
+            return f'{n} tools'
+        check(f'{lang} all tools', library)
+
+        def media_compress():
+            import time
+            from media_compress_dialog import MediaCompressDialog
+            d = track(MediaCompressDialog([str(png)]))   # not media: must refuse politely, not crash
+            d.show()
+            for _ in range(100):
+                app.processEvents(); time.sleep(0.02)
+                if not d.futures:
+                    break
+            d.mode_group.button(2).click(); d.target.setValue(25); d._update()
+            assert not d.confirm.isEnabled()
+            d.reject()
+            return 'ok'
+        check(f'{lang} compress media', media_compress)
+
         def hub_icons():
             import quickwheel
             from PySide6.QtGui import QPixmap, QPainter, QColor
             pix = QPixmap(64, 64)
             painter = QPainter(pix)
             for key in ('ppt_media', 'trim_media', 'heic_jpg', 'pdf_word', 'organize_pdf', 'sign_pdf', 'sign_images',
-                        'scan_document', 'read_qr'):
+                        'scan_document', 'read_qr', 'compress_media', 'rotate_pdf', 'crop_pdf', 'image_grayscale',
+                        'delete_pdf_pages'):
                 label, kind = quickwheel.WHEEL_LABELS[key]
                 quickwheel._draw_action_icon(painter, 32, 32, kind, QColor('#FFFFFF'))
             painter.end()

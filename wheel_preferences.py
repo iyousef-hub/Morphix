@@ -37,7 +37,7 @@ class WheelPreview(QWidget):
         p = QPainter(self)
         size = min(self.width() - 8, self.height() - 8, max(174, round(self.diameter * .78)))
         p.translate((self.width() - size) / 2, (self.height() - size) / 2)
-        _render_wheel(p, size, self.actions[:6], self.files, self.opacity, self.accent, self.glow, hover=0)
+        _render_wheel(p, size, self.actions, self.files, self.opacity, self.accent, self.glow, hover=0)
         p.end()
 
 
@@ -65,7 +65,7 @@ class HubPreview(QWidget):
         if shape == 'wheel':
             w = self.wheel
             w.opacity, w.accent, w.glow, w.diameter = opacity, accent, glow, size
-            w.actions, w.files = actions[:6], files
+            w.actions, w.files = (actions[:24] if getattr(self, 'show_all', False) else actions[:6]), files
             w.setGeometry(self.rect())
             w.show()
             w.update()
@@ -75,7 +75,7 @@ class HubPreview(QWidget):
             vertical = shape == 'bar' and position in ('left', 'right')
             self.panel.configure(shape, vertical=vertical, scale=min(1.2, max(0.8, size / 290.0)),
                                  opacity=opacity, accent=accent, glow=glow)
-            shown = actions[:MAX_ACTIONS[shape]]
+            shown = actions[:24] if getattr(self, 'show_all', False) else actions[:MAX_ACTIONS[shape]]
             if shape == 'bar':
                 shown = shown[:4]          # keep the sample readable inside the card
             self.panel.set_context(files, shown)
@@ -403,7 +403,7 @@ class WheelSettings(QDialog):
         self._heading(tr('File actions'),
                       tr('For each kind of file, tick the tools you want in the Action Hub and drag them into '
                          'your preferred order. The wheel shows up to 6, the other shapes up to 8 or 9; '
-                         'everything else stays under “More tools”.'), layout)
+                         'everything else is one click away under “All tools”.'), layout)
         layout.addWidget(self._text_header(tr('FILE TYPE')))
         self.profile_combo = QComboBox()
         for key, (description, _) in PROFILES.items():
@@ -425,6 +425,12 @@ class WheelSettings(QDialog):
         self.action_count = QLabel('')
         self.action_count.setObjectName('description')
         layout.addWidget(self.action_count)
+        from i18n import option_row
+        self.show_all_box = QCheckBox()
+        self.show_all_box.setChecked(self.settings.value('hub/show_all', False, type=bool))
+        self.show_all_box.toggled.connect(lambda *_: self._actions_changed())
+        layout.addWidget(option_row(self.show_all_box, tr('Always show all tools in the hub (every shape) '
+                                                          'when I press the shortcut')))
         self.profile_combo.currentIndexChanged.connect(self._load_profile)
         layout.addStretch()
         return page
@@ -618,6 +624,11 @@ class WheelSettings(QDialog):
             keys = [self.action_list.item(i).data(Qt.UserRole)
                     for i in range(self.action_list.count())
                     if self.action_list.item(i).checkState() == Qt.Checked] or ['more_actions']
+            from quickwheel import hub_actions
+            every = [self.action_list.item(i).data(Qt.UserRole) for i in range(self.action_list.count())]
+            show_all = hasattr(self, 'show_all_box') and self.show_all_box.isChecked()
+            self.preview.show_all = show_all
+            keys = hub_actions(keys, every, self.current_profile, MAX_ACTIONS[self.shape], show_all)
             key = self.current_profile
             ext = {'pdf': 'pdf', 'image': 'png', 'video': 'mp4', 'audio': 'mp3', 'office': 'docx'}.get(key.split('_')[0], 'zip')
             files = [f'example.{ext}'] * (1 if key.endswith('single') else 3)
@@ -662,6 +673,7 @@ class WheelSettings(QDialog):
         st = self.settings
         st.setValue('shortcut', shortcut)
         st.setValue('hub_shape', self.shape)
+        st.setValue('hub/show_all', self.show_all_box.isChecked())
         st.setValue('hub_position', self.position_combo.currentData())
         st.setValue('hub_visibility', 'always' if self.visible_always.isChecked() else 'shortcut')
         st.setValue('wheel_size', self.size_slider.value())

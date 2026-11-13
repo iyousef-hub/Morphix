@@ -1,3 +1,19 @@
+## v1.11.0 — Video & audio compression, all tools in the hub
+
+- **Compress video and audio** (one file or many): *Recommended* (CRF 24, up to 1080p, AAC 128k), *Choose the
+  strength* (0–100 slider: quality, resolution and audio bitrate step down together) or *Target size* — every file
+  ends up at or under a size such as 25 MB, whatever it was. Target size uses two-pass H.264 and picks the largest
+  picture size that stays clear for the budget (lower frame rate and mono sound only when the budget is very small);
+  if a result is still over the limit it is redone a little smaller. Files already under the size are kept as they
+  are. Audio becomes AAC (.m4a), or MP3 when it was MP3. A live five-step meter and a plain message show the expected
+  quality (Excellent → Very poor) and the estimated size of each file while you adjust.
+- **All tools window**: “All tools” in the hub lists every tool for the selected files, grouped, with search. Click to
+  run; ★ pins or unpins a tool in the hub for that kind of file.
+- **Show all tools**: an option (in that window and in Settings → File actions) that puts every tool in the hub,
+  in every shape, when the shortcut is pressed. The wheel switches to two rings and grows; square, rectangle and bar
+  grids add columns and rows.
+- Short labels and icons for Rotate, Crop, Remove pages, Extract pages and Grayscale.
+
 ## v1.10.0 — Document scanner, phone → computer over Wi-Fi, QR codes
 
 - **Scan documents**: photos of paper become clean, straight pages. Morphix finds the sheet's four corners, undoes

@@ -92,6 +92,8 @@ def main():
                             'rotation': 90, 'filter': 'enhanced'}],
             'scan_name': 'Smoke scan', 'scan_ocr': True}),
         ('read_qr', [s('qr.png')], {}),
+        ('compress_media', [s('c.mkv'), s('d.wav')], {'mc_mode': 'target', 'mc_target_mb': 1}),
+        ('compress_media', [s('c.mkv')], {'mc_mode': 'strength', 'mc_strength': 70}),
     ]
     if has_heic:
         jobs.append(('heic_jpg', [s('p.heic')], {'quality': 90}))

@@ -29,10 +29,10 @@ PROFILES = {
     'pdf_multi': ('Multiple PDFs', ['merge_pdf','merge_optimize','sign_pdf','ocr_searchable_pdf','optimize_pdf','extract_pdf_text','pdf_png_zip','zip_files']),
     'image_single': ('One image', ['scan_document','heic_jpg','remove_bg','images_pdf','ocr_image_text','sign_images','visual_image','image_compress','image_jpg','more_actions']),
     'image_multi': ('Multiple images', ['scan_document','heic_jpg','images_pdf','remove_bg','sign_images','ocr_image_text','image_jpg','image_compress','zip_files']),
-    'video_single': ('One video', ['ppt_media','trim_media','transcribe_media','video_mp3','video_mp4','zip_files']),
-    'video_multi': ('Multiple videos', ['ppt_media','transcribe_media','join_video','video_mp3','video_mp4','zip_files']),
-    'audio_single': ('One audio', ['ppt_media','trim_media','transcribe_media','audio_mp3','zip_files']),
-    'audio_multi': ('Multiple audio', ['ppt_media','transcribe_media','join_audio','audio_mp3','zip_files']),
+    'video_single': ('One video', ['compress_media','ppt_media','trim_media','transcribe_media','video_mp3','video_mp4','zip_files']),
+    'video_multi': ('Multiple videos', ['compress_media','ppt_media','transcribe_media','join_video','video_mp3','video_mp4','zip_files']),
+    'audio_single': ('One audio', ['compress_media','ppt_media','trim_media','transcribe_media','audio_mp3','zip_files']),
+    'audio_multi': ('Multiple audio', ['compress_media','ppt_media','transcribe_media','join_audio','audio_mp3','zip_files']),
     'office': ('Word / PowerPoint files', ['office_pdf','docs_merge_pdf','zip_files','tar_gz_files']),
     'excel_single': ('One Excel file', ['office_pdf','xlsx_pdf_fit','xlsx_csv','xlsx_split','csv_xlsx','zip_files']),
     'excel_multi': ('Multiple Excel files', ['xlsx_merge','docs_merge_pdf','office_pdf','xlsx_csv','csv_xlsx','zip_files']),
@@ -65,10 +65,25 @@ WHEEL_LABELS = {
     'heic_jpg': ('HEIC → JPG','image'), 'pdf_word': ('To Word','word'),
     'organize_pdf': ('Organize pages','pages'), 'sign_pdf': ('Sign','sign'), 'sign_images': ('Signature','sign'),
     'scan_document': ('Scan document','scan'), 'read_qr': ('Read QR code','qr'),
-    'more_actions': ('More tools','more'), 'studio': ('Open Studio','more'),
+    'compress_media': ('Compress','compress'),
+    'rotate_pdf': ('Rotate','rotate'), 'pdf_png': ('To PNG','image'), 'crop_pdf': ('Crop margins','crop'),
+    'delete_pdf_pages': ('Remove pages','delete'), 'extract_pdf_pages': ('Extract pages','split'),
+    'image_rotate': ('Rotate','rotate'), 'image_grayscale': ('Grayscale','gray'), 'image_crop': ('Crop','crop'),
+    'more_actions': ('All tools','more'), 'studio': ('Open Studio','more'),
 }
 
 DEFAULT_SHORTCUT = '<cmd>+<shift>+m' if platform.system() == 'Darwin' else '<ctrl>+<shift>+m'
+
+
+def hub_actions(configured, supported, profile, limit, show_all=False):
+    """What the hub shows. Normally the user's pinned tools (up to the shape's limit) and
+    “All tools” last; with “show all tools” on, every supported tool, pinned ones first."""
+    pinned = [k for k in configured if k != 'more_actions']
+    if profile == 'mixed':
+        return (pinned + [k for k in supported if k not in pinned]) if show_all else pinned[:limit]
+    if show_all:
+        return pinned + [k for k in supported if k not in pinned and k != 'more_actions'] + ['more_actions']
+    return pinned[:limit - 1] + ['more_actions'] if len(pinned) >= limit else pinned + ['more_actions']
 
 
 def selection_profile(paths):
@@ -327,9 +342,51 @@ def _draw_action_icon(p, x, y, kind, color):
     elif kind == 'audio':
         p.drawLine(2,-11,2,7);p.drawLine(2,-11,10,-13)
         p.drawEllipse(QRectF(-6,4,9,7));p.drawEllipse(QRectF(4,2,9,7))
+    elif kind == 'rotate':
+        p.drawArc(QRectF(-11, -11, 22, 22), 100 * 16, 280 * 16)
+        p.drawLine(QPointF(-2, -11), QPointF(-7, -15)); p.drawLine(QPointF(-2, -11), QPointF(-7, -7))
+    elif kind == 'crop':
+        p.drawLine(-7, -13, -7, 7); p.drawLine(-7, 7, 13, 7)
+        p.drawLine(-13, -7, 7, -7); p.drawLine(7, -7, 7, 13)
+    elif kind == 'gray':
+        p.drawEllipse(QPointF(0, 0), 11, 11)
+        p.setBrush(color)
+        path = QPainterPath(QPointF(0, -11)); path.arcTo(QRectF(-11, -11, 22, 22), 90, 180); path.closeSubpath()
+        p.drawPath(path)
+        p.setBrush(Qt.NoBrush)
+    elif kind == 'delete':
+        p.drawRoundedRect(QRectF(-8, -7, 16, 19), 2, 2); p.drawLine(-11, -7, 11, -7); p.drawLine(-4, -12, 4, -12)
+        p.drawLine(-3, -2, -3, 7); p.drawLine(3, -2, 3, 7)
     else:
         for px in (-8,0,8):p.drawEllipse(QPointF(px,0),1.5,1.5)
     p.restore()
+
+
+def wheel_slots(count):
+    """Where each action sits on the wheel, in the 360×360 drawing frame.
+
+    Up to 8 actions use one ring (the classic wheel). More — when “show all tools” is on —
+    use two rings: the first 6–8 tools on the inner ring, the rest on the outer ring.
+    Each slot: ring, index in ring, ring size, inner/outer radius, label radius, centre angle.
+    """
+    if count <= 8:
+        rings = [(count, 57, 158, 115)]
+        center = 55
+    else:
+        n1 = 6 if count <= 12 else 8
+        rings = [(n1, 47, 104, 76), (count - n1, 107, 171, 139)]
+        center = 44
+    slots = []
+    for ring, (n, r_in, r_out, r_label) in enumerate(rings):
+        for j in range(n):
+            slots.append({'ring': ring, 'j': j, 'n': n, 'inner': r_in, 'outer': r_out, 'label': r_label,
+                          'angle': j * 360.0 / n, 'two': len(rings) > 1})
+    return slots, center
+
+
+def wheel_size_factor(count):
+    """A two-ring wheel is drawn bigger so its labels stay readable."""
+    return 1.0 if count <= 8 else 1.42
 
 
 def _render_wheel(p: QPainter, width: int, actions, paths, opacity: int,
@@ -344,7 +401,7 @@ def _render_wheel(p: QPainter, width: int, actions, paths, opacity: int,
     alpha = max(25, min(95, int(opacity))) * 255 // 100
     p.setPen(Qt.NoPen)
     # Subtle luminous halo -- translucent, without a large opaque rectangle.
-    for radius, base_opacity in [(174, 16), (169, 22), (164, 19)]:
+    for radius, base_opacity in [(178, 14), (174, 16), (169, 22), (164, 19)][1 if len(actions) <= 8 else 0:]:
         halo = QColor(accent)
         halo.setAlpha(int(base_opacity * strength))
         p.setBrush(halo)
@@ -353,12 +410,16 @@ def _render_wheel(p: QPainter, width: int, actions, paths, opacity: int,
     if not count:
         p.restore()
         return
-    span = 360.0 / count
-    outer = QRectF(22, 22, 316, 316)
-    inner = QRectF(123, 123, 114, 114)
+    slots, center_r = wheel_slots(count)
+    two = count > 8
     for i, key in enumerate(actions):
-        angle = 90.0 - (i - 0.5) * span - 1.5
-        sweep = -(span - 3.0)
+        s = slots[i]
+        span = 360.0 / s['n']
+        gap = 3.0 if s['inner'] > 50 else 3.4
+        outer = QRectF(180 - s['outer'], 180 - s['outer'], 2 * s['outer'], 2 * s['outer'])
+        inner = QRectF(180 - s['inner'], 180 - s['inner'], 2 * s['inner'], 2 * s['inner'])
+        angle = 90.0 - (s['j'] - 0.5) * span - gap / 2
+        sweep = -(span - gap)
         wedge = QPainterPath()
         wedge.arcMoveTo(outer, angle)
         wedge.arcTo(outer, angle, sweep)
@@ -372,30 +433,58 @@ def _render_wheel(p: QPainter, width: int, actions, paths, opacity: int,
         border.setAlpha(255 if selected else int(105 + 95 * strength))
         p.setPen(QPen(border, 2.2 if selected else 1.25))
         p.drawPath(wedge)
-        theta = math.radians(i * span)
-        cx = 180 + 115 * math.sin(theta)
-        cy = 180 - 115 * math.cos(theta)
+        theta = math.radians(s['angle'])
+        cx = 180 + s['label'] * math.sin(theta)
+        cy = 180 - s['label'] * math.cos(theta)
         if draw_controls:
             label, icon_kind = WHEEL_LABELS.get(key, (key.replace('_', ' ').title(), 'more'))
             label = tr(label)
-            _draw_action_icon(p, cx, cy - 12, icon_kind, QColor('#FFFFFF') if selected else accent.lighter(145))
-            text_font = QFont('Arial', 10)
-            text_font.setWeight(QFont.DemiBold if selected else QFont.Medium)
-            p.setFont(text_font)
-            p.setPen(QColor('#FFFFFF') if selected else QColor('#E0EEFC'))
-            p.drawText(QRectF(cx - 53, cy + 5, 106, 38),
-                       Qt.AlignHCenter | Qt.AlignTop | Qt.TextWordWrap, label)
+            colour = QColor('#FFFFFF') if selected else accent.lighter(145)
+            if two:
+                arc = 2 * math.pi * s['label'] / s['n']
+                box_w = max(44.0, min(78.0, arc - 6))
+                small = s['ring'] == 0
+                p.save()
+                p.translate(cx, cy - (9 if small else 10))
+                p.scale(0.62 if small else 0.74, 0.62 if small else 0.74)
+                _draw_action_icon(p, 0, 0, icon_kind, colour)
+                p.restore()
+                text_font = QFont('Arial', 6 if small else 7)
+                text_font.setWeight(QFont.DemiBold if selected else QFont.Medium)
+                p.setFont(text_font)
+                p.setPen(QColor('#FFFFFF') if selected else QColor('#E0EEFC'))
+                p.drawText(QRectF(cx - box_w / 2, cy + (1 if small else 2), box_w, 26),
+                           Qt.AlignHCenter | Qt.AlignTop | Qt.TextWordWrap, label)
+            else:
+                box_w = min(106.0, 2 * math.pi * s['label'] / s['n'] - 4)
+                _draw_action_icon(p, cx, cy - 12, icon_kind, colour)
+                text_font = QFont('Arial', 10 if count <= 6 else 9)
+                text_font.setWeight(QFont.DemiBold if selected else QFont.Medium)
+                p.setFont(text_font)
+                p.setPen(QColor('#FFFFFF') if selected else QColor('#E0EEFC'))
+                p.drawText(QRectF(cx - box_w / 2, cy + 5, box_w, 38),
+                           Qt.AlignHCenter | Qt.AlignTop | Qt.TextWordWrap, label)
     mid_border = QColor(accent)
     mid_border.setAlpha(225)
     p.setPen(QPen(mid_border, 1.8))
     center = QColor(4, 16, 37)
     center.setAlpha(min(255, alpha + 25))
     p.setBrush(center)
-    p.drawEllipse(origin, 55, 55)
+    p.drawEllipse(origin, center_r, center_r)
     p.setPen(QColor('#D0E9FF'))
-    logo_font = QFont('Arial', 13)
+    logo_font = QFont('Arial', 13 if not two else 10)
     logo_font.setBold(True)
     p.setFont(logo_font)
+    if two:
+        p.drawText(QRectF(140, 162, 80, 18), Qt.AlignCenter, 'Morphix')
+        p.setPen(QColor('#B8D6F4'))
+        p.setFont(QFont('Arial', 7))
+        from file_intelligence import file_summary
+        lines = file_summary(paths, max_lines=1)
+        if lines:
+            p.drawText(QRectF(140, 181, 80, 14), Qt.AlignCenter, lines[0])
+        p.restore()
+        return
     p.drawText(QRectF(125, 140, 110, 23), Qt.AlignCenter, 'Morphix')
     p.setPen(QColor('#B8D6F4'))
     small = QFont('Arial', 9)
@@ -553,7 +642,9 @@ class WheelWindow(QWidget):
         if was_visible:
             self.hide()
         self.setWindowOpacity(1.0)
-        self.setFixedSize(size, size)
+        self._base_size = size
+        side = round(size * wheel_size_factor(len(self.actions)))
+        self.setFixedSize(side, side)
         self.relayout_buttons()
         self.update()
         if was_visible:
@@ -562,12 +653,24 @@ class WheelWindow(QWidget):
     def set_context(self, paths, profile, actions):
         self.paths = list(paths)
         self.profile = profile
-        next_actions = actions[:self.MAX_ACTIONS] or ['studio']
+        limit = self.MAX_ACTIONS if not getattr(self, 'show_all', False) else 24
+        next_actions = actions[:limit] or ['studio']
         self.hover = -1
         # Finder selection polling can run every second. Rebuilding buttons
         # unnecessarily during mouse-down loses the matching release event.
         if next_actions != self.actions:
+            old_factor = wheel_size_factor(len(self.actions))
             self.actions = next_actions
+            factor = wheel_size_factor(len(self.actions))
+            if factor != old_factor:
+                # Two rings need a bigger window; keep it centred where it was.
+                centre = self.geometry().center()
+                side = round(getattr(self, '_base_size', self.width()) * factor)
+                self.setFixedSize(side, side)
+                if self.isVisible():
+                    from hub_panel import apply_shape_mask
+                    apply_shape_mask(self, 'ellipse', inset=max(6, self.width() // 30))
+                    self.move(centre.x() - side // 2, centre.y() - side // 2)
             self.rebuild_buttons()
         self.update()
 
@@ -586,12 +689,18 @@ class WheelWindow(QWidget):
         if not self.action_buttons:
             return
         scale = self.width() / 360.0
+        slots, _ = wheel_slots(len(self.action_buttons))
         for index, button in enumerate(self.action_buttons):
-            theta = math.radians(index * 360.0 / len(self.action_buttons))
-            cx = self.width()/2 + (115 * scale) * math.sin(theta)
-            cy = self.height()/2 - (115 * scale) * math.cos(theta)
-            w = round(105 * scale)
-            h = round(89 * scale)
+            s = slots[index]
+            theta = math.radians(s['angle'])
+            cx = self.width()/2 + (s['label'] * scale) * math.sin(theta)
+            cy = self.height()/2 - (s['label'] * scale) * math.cos(theta)
+            if s['two']:
+                w = round(min(78, 2 * math.pi * s['label'] / s['n'] - 6) * scale)
+                h = round((s['outer'] - s['inner'] - 4) * scale)
+            else:
+                w = round(105 * scale)
+                h = round(89 * scale)
             button.setGeometry(round(cx-w/2), round(cy-h/2), w, h)
             button.refresh_style()
             button.raise_()
@@ -651,13 +760,22 @@ class WheelWindow(QWidget):
         dx = pos.x() * factor - 180
         dy = pos.y() * factor - 180
         radius = math.hypot(dx, dy)
-        if radius < 55:
-            return -2
-        if radius > 158 or not self.actions:
+        if not self.actions:
             return -1
+        slots, center = wheel_slots(len(self.actions))
+        if radius < center:
+            return -2
         angle = math.degrees(math.atan2(dx, -dy)) % 360
-        step = 360.0 / len(self.actions)
-        return int(((angle + step / 2) % 360) // step)
+        first = 0
+        for ring in sorted({s['ring'] for s in slots}):
+            ring_slots = [s for s in slots if s['ring'] == ring]
+            r0 = ring_slots[0]
+            low = center if ring == 0 else r0['inner'] - 2
+            if low <= radius <= r0['outer'] + 2:
+                step = 360.0 / r0['n']
+                return first + int(((angle + step / 2) % 360) // step) % r0['n']
+            first += len(ring_slots)
+        return -1
 
     def mouseMoveEvent(self, event):
         if self._drag_offset is not None:
@@ -1327,10 +1445,11 @@ class QuickWheelController(QObject):
         for new_key, flag in (('transcribe_media', 'wheel_v15_transcribe/'), ('ocr_searchable_pdf', 'wheel_v16_ocr/'),
                               ('organize_pdf', 'wheel_v19_organize/'), ('sign_pdf', 'wheel_v19_sign/'),
                               ('sign_images', 'wheel_v19_sign/'), ('ppt_media', 'wheel_v19_ppt/'),
-                              ('heic_jpg', 'wheel_v19_heic/'), ('scan_document', 'wheel_v110_scan/')):
+                              ('heic_jpg', 'wheel_v19_heic/'), ('scan_document', 'wheel_v110_scan/'),
+                              ('compress_media', 'wheel_v111_compress/')):
             if (isinstance(config, list) and new_key in allowed and new_key not in candidates
                     and not self.settings.value(flag + profile, False, type=bool)):
-                candidates = [new_key] + list(candidates)[:7]
+                candidates = [new_key] + list(candidates)
                 self.settings.setValue('wheel_v14/' + profile, json.dumps(candidates))
                 self.settings.setValue(flag + profile, True)
         # v0.9 mixed profile stored only ZIP/RAR; add the new working TAR.GZ
@@ -1340,7 +1459,13 @@ class QuickWheelController(QObject):
         actions = [key for key in candidates if key in allowed or (key == 'more_actions' and profile != 'mixed')]
         if not actions:
             actions = ['zip_files'] if profile == 'mixed' else [key for key in defaults if key in allowed]
-        self.wheel.set_context(paths, profile, actions[:self.wheel.MAX_ACTIONS])
+        self.wheel.set_context(paths, profile, hub_actions(actions, supported_actions(paths), profile,
+                                                           self.wheel.MAX_ACTIONS, self.show_all_tools()))
+
+    def show_all_tools(self):
+        on = self.settings.value('hub/show_all', False, type=bool)
+        self.wheel.show_all = on
+        return on
 
     def refresh_finder_live(self):
         """Non-blocking Finder polling: the wheel updates when selection changes."""
@@ -1497,17 +1622,13 @@ class QuickWheelController(QObject):
             self.hide_wheel()
             return
         if action == 'more_actions':
-            from main import supported_actions, ACTIONS
-            menu = QMenu()
-            for key in supported_actions(self.current_paths):
-                if key not in self.wheel.actions:
-                    from i18n import amp
-                    menu.addAction(amp(tr(ACTIONS.get(key, key))), lambda checked=False, k=key: self.action_selected(k))
             if not self.current_paths:
+                menu = QMenu()
                 menu.addAction(tr('Choose files for the Action Hub…'), self.add_more_files)
-            menu.addSeparator()
-            menu.addAction(tr('Open Morphix Studio'), lambda: self.open_studio(self.current_paths or None))
-            menu.exec(QCursor.pos())
+                menu.addAction(tr('Open Morphix Studio'), lambda: self.open_studio(None))
+                menu.exec(QCursor.pos())
+                return
+            self.open_tools_library()
             return
         if action == 'studio':
             # Studio is for customization and bulk management, not a required
@@ -1728,6 +1849,28 @@ class QuickWheelController(QObject):
     def on_studio_hidden(self):
         # No AppKit activation-policy flips inside the background process.
         pass
+
+    def open_tools_library(self):
+        """Every tool for the current files: run one, or pin / unpin tools for the hub."""
+        from tools_library import ToolsLibrary
+        paths = list(self.current_paths)
+        profile = selection_profile(paths)
+        accent = getattr(self.wheel, 'accent_setting', None) or self.settings.value('wheel_accent', '#3896FF')
+        dialog = ToolsLibrary(paths, profile, self.settings, accent=str(accent),
+                              hub_limit=self.wheel.MAX_ACTIONS)
+        dialog.setWindowFlag(Qt.WindowStaysOnTopHint, True)
+        screen = QGuiApplication.screenAt(QCursor.pos()) or QApplication.primaryScreen()
+        if screen:
+            g = screen.availableGeometry()
+            dialog.move(g.center().x() - dialog.width() // 2, g.center().y() - dialog.height() // 2)
+        dialog.exec()
+        self.settings.sync()
+        if paths:
+            self._set_context(paths)     # pins / “show all” take effect at once
+        if dialog.edit_requested:
+            self.open_preferences(page=1)
+        elif dialog.choice:
+            QTimer.singleShot(0, lambda k=dialog.choice: self.action_selected(k))
 
     def open_preferences(self, page=0):
         # Keep ALL modals out of the always-on AppKit accessory process.

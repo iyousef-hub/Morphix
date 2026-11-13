@@ -78,6 +78,12 @@ def execute(action, paths, out_dir, progress, options=None):
         return tools_engine.ppt_media(paths, out_dir, progress.emit,
                                       max_height=options.get('ppt_height', '1080'),
                                       audio_format=options.get('ppt_audio', 'm4a'))
+    if action == 'compress_media':
+        import media_compress
+        return media_compress.compress(paths, out_dir, progress.emit, mode=options.get('mc_mode', 'recommended'),
+                                       strength=int(options.get('mc_strength', 50)),
+                                       target_mb=float(options.get('mc_target_mb', 25)),
+                                       keep_resolution=bool(options.get('mc_keep_res')), status=status)
     if action == 'trim_media':
         return tools_engine.trim_media(paths, out_dir, progress.emit, start=options.get('trim_start', '0'),
                                        end=options.get('trim_end', ''), exact=bool(options.get('trim_exact', True)))

@@ -43,7 +43,7 @@ rm -rf "$WORK/dist" "$WORK/build"
   --collect-submodules Xlib \
   --hidden-import worker_process --hidden-import engine_core --hidden-import transcription_engine \
   --hidden-import hub_panel --hidden-import i18n_ar --hidden-import ui_kit --hidden-import win_compat \
-  --hidden-import tools_engine --hidden-import ocr_models --hidden-import latex_ocr --hidden-import action_dialogs --hidden-import signature_dialog --hidden-import scan_engine --hidden-import scan_dialog --hidden-import phone_transfer --hidden-import qr_maker --hidden-import qr_dialog --hidden-import segno --hidden-import zxingcpp --hidden-import PySide6.QtNetwork --hidden-import docs_engine --hidden-import background_engine --hidden-import background_dialog \
+  --hidden-import tools_engine --hidden-import ocr_models --hidden-import latex_ocr --hidden-import action_dialogs --hidden-import signature_dialog --hidden-import scan_engine --hidden-import scan_dialog --hidden-import phone_transfer --hidden-import qr_maker --hidden-import qr_dialog --hidden-import media_compress --hidden-import media_compress_dialog --hidden-import tools_library --hidden-import segno --hidden-import zxingcpp --hidden-import PySide6.QtNetwork --hidden-import docs_engine --hidden-import background_engine --hidden-import background_dialog \
   --hidden-import theme --hidden-import linux_hotkeys --hidden-import linux_integration \
   "${EXTRA[@]}" \
   --add-data "$ROOT/assets:assets" "$ROOT/main.py"
