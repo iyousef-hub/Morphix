@@ -1,4 +1,4 @@
-name: Test DMG to branch (temporary)
+name: Test builds to branch (temporary)
 
 on:
   push:
@@ -9,28 +9,32 @@ permissions:
   actions: read
 
 jobs:
-  build:
-    uses: ./.github/workflows/build-macos.yml
+  windows:
+    uses: ./.github/workflows/build-windows.yml
+  linux:
+    uses: ./.github/workflows/build-linux.yml
   copy:
-    needs: build
+    needs: [windows, linux]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: Morphix_macOS
-          path: dmg
-      - name: Push the DMG in parts to a temporary branch
+          name: release-windows
+          path: out
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-linux
+          path: out
+      - name: Push the builds in parts to a temporary branch
         run: |
-          cd dmg
+          cd out
           ls -la
-          f=$(ls *.dmg | head -1)
-          sha256sum "$f" > SHA256.txt
-          split -b 40m -d "$f" "$f.part"
-          rm "$f"
+          sha256sum * > SHA256.txt
+          for f in *.zip *.AppImage; do split -b 40m -d "$f" "$f.part"; rm "$f"; done
           git init -q
           git config user.name "Yousef"
           git config user.email "279624446+iyousef-hub@users.noreply.github.com"
-          git checkout -q -b test-dmg
+          git checkout -q -b test-builds
           git add -A
-          git commit -q -m "Test DMG"
-          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" test-dmg
+          git commit -q -m "Test builds"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" test-builds
