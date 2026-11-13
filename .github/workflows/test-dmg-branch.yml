@@ -1,0 +1,36 @@
+name: Test DMG to branch (temporary)
+
+on:
+  push:
+    branches: [v1.11-test]
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-macos.yml
+  copy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Morphix_macOS
+          path: dmg
+      - name: Push the DMG in parts to a temporary branch
+        run: |
+          cd dmg
+          ls -la
+          f=$(ls *.dmg | head -1)
+          sha256sum "$f" > SHA256.txt
+          split -b 40m -d "$f" "$f.part"
+          rm "$f"
+          git init -q
+          git config user.name "Yousef"
+          git config user.email "279624446+iyousef-hub@users.noreply.github.com"
+          git checkout -q -b test-dmg
+          git add -A
+          git commit -q -m "Test DMG"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" test-dmg
