@@ -621,6 +621,18 @@ if __name__ == '__main__':
     # Quick Wheel imports the engine through `main`; share this module rather than
     # loading the same source twice (as both __main__ and main).
     sys.modules.setdefault('main', sys.modules[__name__])
+    if len(sys.argv) == 1:
+        # Microsoft Store build: Windows starts the app at sign-in through a startup
+        # task, which cannot pass --background. A plain launch in the first minutes
+        # after Windows starts is that sign-in start, so stay quietly in the tray.
+        try:
+            from autostart import is_store_package
+            if is_store_package():
+                import ctypes
+                if ctypes.windll.kernel32.GetTickCount64() < 4 * 60 * 1000:
+                    sys.argv.append('--background')
+        except Exception:
+            pass
     from quickwheel import QuickWheelController
     from PySide6.QtWidgets import QSystemTrayIcon
 

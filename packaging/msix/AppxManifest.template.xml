@@ -3,9 +3,8 @@
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
   xmlns:uap5="http://schemas.microsoft.com/appx/manifest/uap/windows10/5"
-  xmlns:uap10="http://schemas.microsoft.com/appx/manifest/uap/windows10/10"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-  IgnorableNamespaces="uap uap5 uap10 rescap">
+  IgnorableNamespaces="uap uap5 rescap">
 
   <Identity Name="YousefA.Alghamdi.MorphixStudio"
             Publisher="CN=21027604-DABE-4066-BAD0-D124E28C13FF"
@@ -39,23 +38,14 @@
                          Square310x310Logo="Assets\Square310x310Logo.png"
                          ShortName="Morphix" />
       </uap:VisualElements>
-    </Application>
-
-    <!-- Same program, started quietly at sign-in (no window until the hotkey is pressed). -->
-    <Application Id="MorphixBackground" Executable="Morphix\Morphix.exe" EntryPoint="Windows.FullTrustApplication"
-                 uap10:Parameters="--background">
-      <uap:VisualElements DisplayName="Morphix (background)"
-                          Description="Starts the Morphix shortcut helper when you sign in."
-                          BackgroundColor="transparent"
-                          Square150x150Logo="Assets\Square150x150Logo.png"
-                          Square44x44Logo="Assets\Square44x44Logo.png"
-                          AppListEntry="none" />
       <Extensions>
+        <!-- Start with Windows (switch in Settings > Apps > Startup). -->
         <uap5:Extension Category="windows.startupTask" Executable="Morphix\Morphix.exe" EntryPoint="Windows.FullTrustApplication">
           <uap5:StartupTask TaskId="MorphixStartup" Enabled="true" DisplayName="Morphix" />
         </uap5:Extension>
       </Extensions>
     </Application>
+
   </Applications>
 
   <Capabilities>
