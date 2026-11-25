@@ -47,9 +47,16 @@ jobs:
           $kit = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\bin' -Directory | Where-Object { $_.Name -like '10.*' } | Sort-Object Name -Descending | Select-Object -First 1
           $bin = Join-Path $kit.FullName 'x64'
           "SDKBIN=$bin" | Out-File -FilePath $env:GITHUB_ENV -Append
+          # Index only the tile images (the app folder itself is not a resource tree).
+          New-Item -ItemType Directory -Force pri_src | Out-Null
+          Copy-Item pkg\AppxManifest.xml pri_src\
+          Copy-Item pkg\Assets pri_src\Assets -Recurse
           & "$bin\makepri.exe" createconfig /cf priconfig.xml /dq en-US_ar-SA /pv 10.0.0 /o
-          & "$bin\makepri.exe" new /pr pkg /cf priconfig.xml /mn pkg\AppxManifest.xml /of pkg\resources.pri /o
+          & "$bin\makepri.exe" new /pr pri_src /cf priconfig.xml /mn pri_src\AppxManifest.xml /of pkg\resources.pri /o
           if ($LASTEXITCODE -ne 0) { throw 'makepri failed' }
+          # File names Windows packages cannot hold (reserved device names, trailing dot or space).
+          $bad = Get-ChildItem pkg -Recurse | Where-Object { $_.BaseName -match '^(con|prn|aux|nul|com[0-9]|lpt[0-9])$' -or $_.Name -match '[. ]$' -or $_.Name -match '[%#]' }
+          if ($bad) { $bad | ForEach-Object { Write-Host "::warning::Removing unsupported file name: $($_.FullName)" }; $bad | Remove-Item -Recurse -Force }
           $name = "MorphixStudio_$($env:MSIX_VERSION)_x64.msix"
           & "$bin\makeappx.exe" pack /d pkg /p $name /o
           if ($LASTEXITCODE -ne 0) { throw 'makeappx failed' }
