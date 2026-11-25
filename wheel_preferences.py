@@ -485,9 +485,19 @@ class WheelSettings(QDialog):
         pl = QVBoxLayout(panel)
         pl.setContentsMargins(20, 18, 20, 18)
         self.login_checkbox = QCheckBox()
-        from autostart import is_enabled
+        from autostart import is_enabled, is_store_package
         self.login_checkbox.setChecked(is_enabled())
-        pl.addWidget(i18n.option_row(self.login_checkbox, tr('Start Morphix automatically when I log in')))
+        if is_store_package():
+            # Store version: Windows owns the switch (Settings → Apps → Startup).
+            note = QLabel(tr('Morphix starts with Windows. To turn this on or off, use Windows Settings → Apps → Startup.'))
+            note.setWordWrap(True)
+            pl.addWidget(note)
+            open_btn = QPushButton(tr('Open Startup settings'))
+            from autostart import open_startup_settings
+            open_btn.clicked.connect(lambda: open_startup_settings())
+            pl.addWidget(open_btn, 0, Qt.AlignLeft)
+        else:
+            pl.addWidget(i18n.option_row(self.login_checkbox, tr('Start Morphix automatically when I log in')))
         sub = QLabel(tr('Only the background helper starts — Studio stays closed until you open it.'))
         sub.setObjectName('description')
         sub.setWordWrap(True)

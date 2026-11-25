@@ -878,4 +878,6 @@ AR = {
     'Rotate': 'تدوير',
     'Crop margins': 'قص الهوامش',
     'Remove pages': 'حذف صفحات',
+    'Morphix starts with Windows. To turn this on or off, use Windows Settings → Apps → Startup.': 'يبدأ Morphix مع ويندوز. لتشغيل ذلك أو إيقافه استخدم إعدادات ويندوز ← التطبيقات ← بدء التشغيل.',
+    'Open Startup settings': 'افتح إعدادات بدء التشغيل',
 }

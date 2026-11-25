@@ -48,8 +48,33 @@ def _linux_args():
         return _launch_args()
 
 
+def is_store_package():
+    """True when running as the Microsoft Store (MSIX) package.
+
+    There, start-at-login is a Windows startup task declared in the package
+    (on by default, switched in Windows Settings → Apps → Startup); the
+    registry Run key would be virtualised and do nothing.
+    """
+    if platform.system() != 'Windows':
+        return False
+    try:
+        import ctypes
+        length = ctypes.c_uint32(0)
+        rc = ctypes.windll.kernel32.GetCurrentPackageFullName(ctypes.byref(length), None)
+        return rc != 15700          # APPMODEL_ERROR_NO_PACKAGE
+    except Exception:
+        return False
+
+
+def open_startup_settings():
+    import os as _os
+    _os.startfile('ms-settings:startupapps')
+
+
 def is_enabled():
     system = platform.system()
+    if is_store_package():
+        return True
     if system == 'Linux':
         return _linux_autostart().is_file()
     if system == 'Darwin':
@@ -68,6 +93,8 @@ def is_enabled():
 
 def set_enabled(enabled: bool):
     system = platform.system()
+    if is_store_package():
+        return
     if system == 'Darwin':
         plist = _mac_plist()
         if not enabled:

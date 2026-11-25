@@ -1,0 +1,93 @@
+name: Build MSIX (Microsoft Store)
+
+# Wraps the Windows build into an MSIX for the Microsoft Store.
+# The Store signs it, so no certificate is needed here. A test copy is signed
+# with a throw-away certificate only to install and check it on the runner.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  windows:
+    uses: ./.github/workflows/build-windows.yml
+
+  msix:
+    needs: windows
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: Morphix_Windows
+          path: pkg/Morphix
+
+      - name: Make the package folder
+        shell: pwsh
+        run: |
+          python -m pip install pillow
+          python packaging/msix/make_assets.py assets/morphix_logo.png pkg/Assets
+          $version = (Get-Content VERSION -Raw).Trim() + '.0'
+          (Get-Content packaging/msix/AppxManifest.template.xml -Raw).Replace('@VERSION@', $version) | Set-Content pkg/AppxManifest.xml -Encoding utf8
+          "MSIX_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Get-ChildItem pkg | Format-Table Name
+
+      - name: Pack (makepri + makeappx)
+        shell: pwsh
+        run: |
+          $kit = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\bin' -Directory | Where-Object { $_.Name -like '10.*' } | Sort-Object Name -Descending | Select-Object -First 1
+          $bin = Join-Path $kit.FullName 'x64'
+          "SDKBIN=$bin" | Out-File -FilePath $env:GITHUB_ENV -Append
+          & "$bin\makepri.exe" createconfig /cf priconfig.xml /dq en-US_ar-SA /pv 10.0.0 /o
+          & "$bin\makepri.exe" new /pr pkg /cf priconfig.xml /mn pkg\AppxManifest.xml /of pkg\resources.pri /o
+          if ($LASTEXITCODE -ne 0) { throw 'makepri failed' }
+          $name = "MorphixStudio_$($env:MSIX_VERSION)_x64.msix"
+          & "$bin\makeappx.exe" pack /d pkg /p $name /o
+          if ($LASTEXITCODE -ne 0) { throw 'makeappx failed' }
+          "MSIX=$name" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Get-Item $name | Format-List Name, Length
+
+      - name: Install a test-signed copy and run the UI self-test inside the package
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $cert = New-SelfSignedCertificate -Type Custom -Subject 'CN=21027604-DABE-4066-BAD0-D124E28C13FF' -KeyUsage DigitalSignature -FriendlyName 'Morphix test' -CertStoreLocation 'Cert:\CurrentUser\My' -TextExtension @('2.5.29.37={text}1.3.6.1.5.5.7.3.3', '2.5.29.19={text}')
+          $pwd = ConvertTo-SecureString -String 'test' -Force -AsPlainText
+          Export-PfxCertificate -Cert $cert -FilePath test.pfx -Password $pwd | Out-Null
+          Import-PfxCertificate -FilePath test.pfx -CertStoreLocation Cert:\LocalMachine\TrustedPeople -Password $pwd | Out-Null
+          Copy-Item $env:MSIX test.msix
+          & "$env:SDKBIN\signtool.exe" sign /fd SHA256 /f test.pfx /p test test.msix
+          Add-AppxPackage -Path test.msix
+          $p = Get-AppxPackage -Name 'YousefA.Alghamdi.MorphixStudio'
+          $p | Format-List Name, Version, PackageFamilyName, InstallLocation
+          $dir = Join-Path $env:RUNNER_TEMP 'msixui'
+          [Environment]::SetEnvironmentVariable('QT_QPA_PLATFORM', 'offscreen', 'User')
+          Invoke-CommandInDesktopPackage -PackageFamilyName $p.PackageFamilyName -AppId 'Morphix' -Command (Join-Path $p.InstallLocation 'Morphix\Morphix.exe') -Args "--morphix-ui-selftest `"$dir`""
+          for ($i = 0; $i -lt 90; $i++) { if (Test-Path "$dir\ui_selftest.txt") { $last = Get-Content "$dir\ui_selftest.txt" -Tail 1; if ($last -match 'SELFTEST') { break } }; Start-Sleep 2 }
+          if (Test-Path "$dir\ui_selftest.txt") { Get-Content "$dir\ui_selftest.txt" -Tail 5 } else { Write-Host 'no self-test output' }
+
+      - name: Hand the package over on a temporary branch
+        shell: bash
+        run: |
+          mkdir out && cd out
+          cp "../$MSIX" .
+          sha256sum "$MSIX" > SHA256.txt
+          split -b 90m -d "$MSIX" "$MSIX.part"
+          rm "$MSIX"
+          ls -la
+          git init -q
+          git config user.name "Yousef"
+          git config user.email "279624446+iyousef-hub@users.noreply.github.com"
+          git checkout -q -b store-msix
+          git add -A
+          git commit -q -m "Store package $MSIX_VERSION"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" store-msix
