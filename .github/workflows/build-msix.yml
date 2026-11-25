@@ -6,6 +6,11 @@ name: Build MSIX (Microsoft Store)
 
 on:
   workflow_dispatch:
+    inputs:
+      reuse_run:
+        description: 'Reuse the Windows build from this run id (empty = build again)'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -13,10 +18,12 @@ permissions:
 
 jobs:
   windows:
+    if: ${{ inputs.reuse_run == '' }}
     uses: ./.github/workflows/build-windows.yml
 
   msix:
     needs: windows
+    if: ${{ always() && (needs.windows.result == 'success' || inputs.reuse_run != '') }}
     runs-on: windows-latest
     timeout-minutes: 60
     steps:
@@ -30,6 +37,8 @@ jobs:
         with:
           name: Morphix_Windows
           path: pkg/Morphix
+          run-id: ${{ inputs.reuse_run || github.run_id }}
+          github-token: ${{ github.token }}
 
       - name: Make the package folder
         shell: pwsh
@@ -55,7 +64,9 @@ jobs:
           & "$bin\makepri.exe" new /pr pri_src /cf priconfig.xml /mn pri_src\AppxManifest.xml /of pkg\resources.pri /o
           if ($LASTEXITCODE -ne 0) { throw 'makepri failed' }
           # File names Windows packages cannot hold (reserved device names, trailing dot or space).
-          $bad = Get-ChildItem pkg -Recurse | Where-Object { $_.BaseName -match '^(con|prn|aux|nul|com[0-9]|lpt[0-9])$' -or $_.Name -match '[. ]$' -or $_.Name -match '[%#]' }
+          $bad = Get-ChildItem pkg -Recurse | Where-Object { $_.BaseName -match '^(con|prn|aux|nul|com[0-9]|lpt[0-9])$' -or $_.Name -match '[. ]$' -or $_.Name -match '[%#]' -or $_.Name -eq '[Content_Types].xml' }
+          # python-docx keeps the unpacked source of its template (not used at run time).
+          Remove-Item pkg\Morphix\_internal\docx\templates\default-docx-template -Recurse -Force -ErrorAction SilentlyContinue
           if ($bad) { $bad | ForEach-Object { Write-Host "::warning::Removing unsupported file name: $($_.FullName)" }; $bad | Remove-Item -Recurse -Force }
           $name = "MorphixStudio_$($env:MSIX_VERSION)_x64.msix"
           & "$bin\makeappx.exe" pack /d pkg /p $name /o
