@@ -64,10 +64,9 @@ jobs:
           & "$bin\makepri.exe" new /pr pri_src /cf priconfig.xml /mn pri_src\AppxManifest.xml /of pkg\resources.pri /o
           if ($LASTEXITCODE -ne 0) { throw 'makepri failed' }
           # File names Windows packages cannot hold (reserved device names, trailing dot or space).
+          Remove-Item -LiteralPath pkg\Morphix\_internal\docx\templates\default-docx-template -Recurse -Force -ErrorAction SilentlyContinue
           $bad = Get-ChildItem pkg -Recurse | Where-Object { $_.BaseName -match '^(con|prn|aux|nul|com[0-9]|lpt[0-9])$' -or $_.Name -match '[. ]$' -or $_.Name -match '[%#]' -or $_.Name -eq '[Content_Types].xml' }
-          # python-docx keeps the unpacked source of its template (not used at run time).
-          Remove-Item pkg\Morphix\_internal\docx\templates\default-docx-template -Recurse -Force -ErrorAction SilentlyContinue
-          if ($bad) { $bad | ForEach-Object { Write-Host "::warning::Removing unsupported file name: $($_.FullName)" }; $bad | Remove-Item -Recurse -Force }
+          if ($bad) { $bad | ForEach-Object { Write-Host "::warning::Removing unsupported file name: $($_.FullName)" }; $bad | ForEach-Object { Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue } }
           $name = "MorphixStudio_$($env:MSIX_VERSION)_x64.msix"
           & "$bin\makeappx.exe" pack /d pkg /p $name /o
           if ($LASTEXITCODE -ne 0) { throw 'makeappx failed' }
