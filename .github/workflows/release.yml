@@ -1,7 +1,7 @@
 name: Release
 
 # Push a tag such as v1.9.0 (or Actions → Release → Run workflow): builds Windows,
-# macOS and Linux, then publishes the GitHub Release with all three downloads.
+# macOS (Apple Silicon and Intel) and Linux, then publishes the GitHub Release with all four downloads.
 
 on:
   push:
@@ -33,6 +33,10 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: Morphix_macOS
+          path: out
+      - uses: actions/download-artifact@v4
+        with:
+          name: Morphix_macOS_Intel
           path: out
       - uses: actions/download-artifact@v4
         with:
