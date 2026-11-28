@@ -1,6 +1,6 @@
 name: Build macOS
 
-# Builds Morphix.app and Morphix.dmg (Apple Silicon) on a GitHub-hosted Mac.
+# Builds Morphix.app and Morphix.dmg for Apple Silicon and for Intel Macs on GitHub-hosted Macs.
 #  - Every push to main and every manual run: a downloadable "Morphix_macOS" artifact.
 #  - A tag such as v1.7.1: the DMG is also attached to the GitHub Release.
 
@@ -15,7 +15,17 @@ permissions:
 
 jobs:
   macos:
-    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-latest      # Apple Silicon (M1 and later)
+            artifact: Morphix_macOS
+            dmg_tag: ''
+          - runner: macos-15-intel    # Intel Macs
+            artifact: Morphix_macOS_Intel
+            dmg_tag: '_Intel'
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
@@ -90,11 +100,11 @@ jobs:
           mkdir -p "$STAGE"
           ditto build_out/dist/Morphix.app "$STAGE/Morphix.app"
           ln -s /Applications "$STAGE/Applications"
-          hdiutil create -volname Morphix -srcfolder "$STAGE" -ov -format UDZO "Morphix_macOS_$VERSION.dmg"
-          echo "DMG=Morphix_macOS_$VERSION.dmg" >> "$GITHUB_ENV"
+          hdiutil create -volname Morphix -srcfolder "$STAGE" -ov -format UDZO "Morphix_macOS${{ matrix.dmg_tag }}_$VERSION.dmg"
+          echo "DMG=Morphix_macOS${{ matrix.dmg_tag }}_$VERSION.dmg" >> "$GITHUB_ENV"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Morphix_macOS
+          name: ${{ matrix.artifact }}
           path: ${{ env.DMG }}
           retention-days: 30
